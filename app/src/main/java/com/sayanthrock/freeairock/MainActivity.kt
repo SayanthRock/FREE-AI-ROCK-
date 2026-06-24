@@ -3,6 +3,7 @@ package com.sayanthrock.freeairock
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -25,10 +26,12 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.sayanthrock.freeairock.data.github.GitHubApiService
 import com.sayanthrock.freeairock.data.storage.SecureStorageManager
+import com.sayanthrock.freeairock.ui.AboutScreen
 import com.sayanthrock.freeairock.ui.HomeScaffold
 import com.sayanthrock.freeairock.ui.PlaceholderPanel
 import com.sayanthrock.freeairock.ui.ReviewScreen
 import com.sayanthrock.freeairock.ui.ReviewViewModel
+import com.sayanthrock.freeairock.ui.ThemeMode
 import com.sayanthrock.freeairock.ui.theme.FreeAiRockTheme
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
@@ -46,7 +49,14 @@ class MainActivity : ComponentActivity() {
         val reviewViewModel = ReviewViewModel(secureStorage, githubApiService)
 
         setContent {
-            FreeAiRockTheme {
+            var appTheme by remember { mutableStateOf(ThemeMode.SYSTEM) }
+            val darkTheme = when (appTheme) {
+                ThemeMode.SYSTEM -> isSystemInDarkTheme()
+                ThemeMode.LIGHT -> false
+                ThemeMode.DARK -> true
+            }
+
+            FreeAiRockTheme(darkTheme = darkTheme) {
                 HomeScaffold(
                     codeContent = {
                         SetupScreen(
@@ -66,6 +76,13 @@ class MainActivity : ComponentActivity() {
                         PlaceholderPanel(
                             title = "Image Studio",
                             body = "Image renderer, bitmap state, and gallery save helper are ready. Full creation UI will connect here next.",
+                            modifier = modifier
+                        )
+                    },
+                    aboutContent = { modifier ->
+                        AboutScreen(
+                            currentTheme = appTheme,
+                            onThemeChange = { appTheme = it },
                             modifier = modifier
                         )
                     }
