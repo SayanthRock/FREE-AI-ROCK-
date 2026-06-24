@@ -24,11 +24,40 @@ class AiCodeAnalyzer(apiKey: String) {
             appendLine("```")
         }
 
+        return generateText(prompt, "No explanation generated.")
+    }
+
+    suspend fun summarizePullRequest(owner: String, repo: String, pullNumber: Int, diffText: String): String {
+        val safeOwner = owner.ifBlank { "owner" }
+        val safeRepo = repo.ifBlank { "repo" }
+        val prompt = buildString {
+            appendLine("You are a senior code reviewer.")
+            appendLine("Summarize pull request #$pullNumber in $safeOwner/$safeRepo using the Git diff below.")
+            appendLine("Focus on developer impact, affected files, behavior changes, risks, testing notes, and release notes.")
+            appendLine("Use clear plain English. Avoid repeating every line of the diff.")
+            appendLine()
+            appendLine("Return this structure:")
+            appendLine("1. Summary")
+            appendLine("2. Key changes")
+            appendLine("3. Risk level")
+            appendLine("4. Testing checklist")
+            appendLine("5. Suggested release note")
+            appendLine()
+            appendLine("Git diff:")
+            appendLine("```diff")
+            appendLine(diffText.take(MAX_DIFF_CHARS))
+            appendLine("```")
+        }
+
+        return generateText(prompt, "No pull request summary generated.")
+    }
+
+    private suspend fun generateText(prompt: String, fallback: String): String {
         return try {
             val response = model.generateContent(
                 content { text(prompt) }
             )
-            response.text ?: "No explanation generated."
+            response.text ?: fallback
         } catch (error: Exception) {
             "AI analysis failed: ${error.localizedMessage ?: "Unknown error"}"
         }
@@ -36,5 +65,6 @@ class AiCodeAnalyzer(apiKey: String) {
 
     companion object {
         private const val MAX_CODE_CHARS = 12000
+        private const val MAX_DIFF_CHARS = 18000
     }
 }
