@@ -24,10 +24,11 @@ import com.sayanthrock.freeairock.ui.navigation.Screen
 @Composable
 fun HomeScaffold(
     codeContent: @Composable (Modifier) -> Unit,
+    reviewContent: @Composable (Modifier) -> Unit,
     studioContent: @Composable (Modifier) -> Unit
 ) {
     val navController = rememberNavController()
-    val screens = listOf(Screen.CodeAnalyzer, Screen.ImageStudio)
+    val screens = listOf(Screen.CodeAnalyzer, Screen.PullRequestReview, Screen.ImageStudio)
 
     Scaffold(
         bottomBar = {
@@ -71,6 +72,9 @@ fun HomeScaffold(
         ) {
             composable(Screen.CodeAnalyzer.route) {
                 codeContent(Modifier)
+            }
+            composable(Screen.PullRequestReview.route) {
+                reviewContent(Modifier)
             }
             composable(Screen.ImageStudio.route) {
                 studioContent(Modifier)
