@@ -2,11 +2,9 @@ package com.sayanthrock.freeairock.ui
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -29,43 +27,26 @@ fun HomeScaffold(
     aboutContent: @Composable (Modifier) -> Unit
 ) {
     val navController = rememberNavController()
-    val screens = listOf(
-        Screen.CodeAnalyzer,
-        Screen.PullRequestReview,
-        Screen.ImageStudio,
-        Screen.About
-    )
+    val screens = listOf(Screen.CodeAnalyzer, Screen.PullRequestReview, Screen.ImageStudio, Screen.About)
 
     Scaffold(
         bottomBar = {
-            NavigationBar(
-                containerColor = MaterialTheme.colorScheme.surface,
-                contentColor = MaterialTheme.colorScheme.onSurface
-            ) {
+            NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
                 val navBackStackEntry by navController.currentBackStackEntryAsState()
                 val currentDestination = navBackStackEntry?.destination
 
                 screens.forEach { screen ->
                     NavigationBarItem(
-                        icon = { Icon(screen.icon, contentDescription = screen.title) },
+                        icon = { Text(screen.shortLabel, fontFamily = FontFamily.Monospace) },
                         label = { Text(screen.title, fontFamily = FontFamily.Monospace) },
                         selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true,
                         onClick = {
                             navController.navigate(screen.route) {
-                                popUpTo(navController.graph.findStartDestination().id) {
-                                    saveState = true
-                                }
+                                popUpTo(navController.graph.findStartDestination().id) { saveState = true }
                                 launchSingleTop = true
                                 restoreState = true
                             }
-                        },
-                        colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = MaterialTheme.colorScheme.onPrimary,
-                            selectedTextColor = MaterialTheme.colorScheme.primary,
-                            indicatorColor = MaterialTheme.colorScheme.primary,
-                            unselectedIconColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                            unselectedTextColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                        )
+                        }
                     )
                 }
             }
@@ -76,18 +57,10 @@ fun HomeScaffold(
             startDestination = Screen.CodeAnalyzer.route,
             modifier = Modifier.padding(innerPadding)
         ) {
-            composable(Screen.CodeAnalyzer.route) {
-                codeContent(Modifier)
-            }
-            composable(Screen.PullRequestReview.route) {
-                reviewContent(Modifier)
-            }
-            composable(Screen.ImageStudio.route) {
-                studioContent(Modifier)
-            }
-            composable(Screen.About.route) {
-                aboutContent(Modifier)
-            }
+            composable(Screen.CodeAnalyzer.route) { codeContent(Modifier) }
+            composable(Screen.PullRequestReview.route) { reviewContent(Modifier) }
+            composable(Screen.ImageStudio.route) { studioContent(Modifier) }
+            composable(Screen.About.route) { aboutContent(Modifier) }
         }
     }
 }
@@ -105,9 +78,6 @@ fun PlaceholderPanel(
             fontFamily = FontFamily.Monospace,
             color = MaterialTheme.colorScheme.primary
         )
-        Text(
-            text = body,
-            color = MaterialTheme.colorScheme.onBackground
-        )
+        Text(text = body, color = MaterialTheme.colorScheme.onBackground)
     }
 }
