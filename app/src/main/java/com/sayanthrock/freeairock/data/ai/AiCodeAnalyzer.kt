@@ -27,6 +27,23 @@ class AiCodeAnalyzer(apiKey: String) {
         return generateText(prompt, "No explanation generated.")
     }
 
+    suspend fun summarizePullRequest(diffCode: String): String {
+        val prompt = buildString {
+            appendLine("You are an expert lead developer reviewing a pull request.")
+            appendLine("Analyze the following Git diff.")
+            appendLine("Do not read line-by-line changes back to the user.")
+            appendLine("Explain the high-level purpose, likely bug fix or feature, architecture impact, risk, and testing notes.")
+            appendLine("Keep the explanation approachable for a junior developer.")
+            appendLine()
+            appendLine("Git diff:")
+            appendLine("```diff")
+            appendLine(diffCode.take(MAX_DIFF_CHARS))
+            appendLine("```")
+        }
+
+        return generateText(prompt, "No pull request explanation generated.")
+    }
+
     suspend fun summarizePullRequest(owner: String, repo: String, pullNumber: Int, diffText: String): String {
         val safeOwner = owner.ifBlank { "owner" }
         val safeRepo = repo.ifBlank { "repo" }
