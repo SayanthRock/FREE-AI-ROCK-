@@ -2,6 +2,7 @@ package com.sayanthrock.freeairock.data.github
 
 import okhttp3.ResponseBody
 import retrofit2.http.GET
+import retrofit2.http.Headers
 import retrofit2.http.Path
 import retrofit2.http.Query
 import retrofit2.http.Url
@@ -20,6 +21,14 @@ interface GitHubApiService {
         @Path("repo") repo: String,
         @Path(value = "path", encoded = true) path: String = ""
     ): List<GitHubContentItem>
+
+    @Headers("Accept: application/vnd.github.v3.diff")
+    @GET("repos/{owner}/{repo}/pulls/{pullNumber}")
+    suspend fun getPullRequestDiff(
+        @Path("owner") owner: String,
+        @Path("repo") repo: String,
+        @Path("pullNumber") pullNumber: Int
+    ): ResponseBody
 
     @GET
     suspend fun downloadRawFile(
