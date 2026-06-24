@@ -3,6 +3,7 @@ package com.sayanthrock.freeairock.ui.navigation
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Brush
 import androidx.compose.material.icons.filled.Code
+import androidx.compose.material.icons.filled.RateReview
 import androidx.compose.ui.graphics.vector.ImageVector
 
 sealed class Screen(
@@ -17,9 +18,9 @@ sealed class Screen(
     )
 
     data object PullRequestReview : Screen(
-        route = "pull_request_review",
+        route = "pr_review",
         title = "PR Review",
-        icon = Icons.Filled.Code
+        icon = Icons.Filled.RateReview
     )
 
     data object ImageStudio : Screen(
