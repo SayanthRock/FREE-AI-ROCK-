@@ -1,96 +1,143 @@
-# FREE-AI-ROCK
+# FREE-AI-ROCK 🚀
 
-**FREE-AI-ROCK** is a free developer assistant for Android that combines AI chat, GitHub repository exploration, code explanation, pull request summaries, and local file export tools in one clean mobile-first interface.
+**FREE-AI-ROCK** is an advanced AI-powered developer toolkit built natively for Android. It bridges the GitHub API with Google's Gemini generative models to explore repositories, summarize complex pull requests, explain code, and prepare AI-assisted development workflows inside a strict, system-aware minimalist interface.
 
-## Goal
+![Tests](https://img.shields.io/github/actions/workflow/status/SayanthRock/FREE-AI-ROCK-/android-test.yml?label=Tests)
+![Debug Build](https://img.shields.io/github/actions/workflow/status/SayanthRock/FREE-AI-ROCK-/android-build.yml?label=Debug%20Build)
+![Release](https://img.shields.io/github/v/release/SayanthRock/FREE-AI-ROCK-)
+![Platform](https://img.shields.io/badge/Platform-Android_10%2B-3DDC84?logo=android)
+![Kotlin](https://img.shields.io/badge/Kotlin-Android-7F52FF?logo=kotlin)
 
-Build a practical AI developer tool that helps users:
+## ✨ Core Capabilities
 
-- Browse GitHub repositories and files.
-- Explain code with AI.
-- Summarize pull requests and diffs.
-- Generate developer prompts and code snippets.
-- Save generated code to local files using Android Storage Access Framework.
-- Use a clean charcoal/white UI with Light, Dark, and System theme modes.
+- **Code AI:** Explore GitHub repositories, fetch raw code files, and generate approachable plain-English explanations of technical structures.
+- **PR Review:** Fetch raw Git diffs through the GitHub API and send them to Gemini 1.5 Flash for high-level summaries, risk notes, and testing guidance.
+- **Image Studio Foundation:** Uses a Gemini image renderer pipeline with bitmap state handling and native gallery saving support.
+- **Settings & About:** Switch between System Auto, Light, and Dark modes while keeping the FREE-AI-ROCK charcoal/white identity.
+- **Secure Setup:** Store user-provided GitHub and Gemini keys locally using encrypted Android storage.
 
-## Tech Stack
+## 🛡️ Architecture & Security
 
-| Layer | Choice |
+FREE-AI-ROCK prioritizes local security, lifecycle resilience, and production safety.
+
+- **Zero hardcoded secrets:** API keys are not committed to version control.
+- **Encrypted local storage:** Uses AndroidX Security Crypto and encrypted preferences for local key storage.
+- **Lifecycle-safe ViewModels:** A unified `ViewModelProvider.Factory` keeps ViewModel state stable across rotation, theme changes, and Activity recreation.
+- **Scoped storage:** Media output is written through Android `MediaStore` to `Pictures/FREE-AI-ROCK` without broad storage access.
+- **Release hardening:** R8/ProGuard rules protect Retrofit, Gson models, AndroidX Security Crypto, and the Google AI SDK.
+- **Crash recovery:** Release builds archive `mapping.txt` so obfuscated production crashes can be decoded with Android retrace.
+
+## 🛠️ Tech Stack
+
+| Layer | Technology |
 |---|---|
-| UI | Jetpack Compose |
+| UI | Jetpack Compose, Material 3, Compose Navigation |
 | Language | Kotlin |
-| Architecture | MVVM-ready modular package structure |
-| Networking | Retrofit + OkHttp |
-| Images | Coil |
-| Local settings | DataStore |
-| Cache layer | Room-ready structure |
-| AI | Gemini/OpenAI-compatible service abstraction |
-| GitHub | GitHub REST API |
-| CI | GitHub Actions Android build workflow |
+| Architecture | MVVM, ViewModelFactory, Coroutines, StateFlow |
+| Networking | Retrofit, OkHttp, Gson |
+| AI | Google AI Client SDK / Gemini |
+| Security | AndroidX Security Crypto, Android Keystore-backed encrypted preferences |
+| Storage | Android MediaStore, scoped storage |
+| Testing | JUnit 4, MockK, Coroutines Test, AndroidX Core Testing |
+| CI/CD | GitHub Actions debug build, unit tests, signed release, R8 mapping archive |
 
-## Core Features
+## 📱 App Sections
 
-### GitHub Explorer
+```text
+Code AI
+PR Review
+Image Studio
+Settings
+```
 
-- List repositories.
-- Browse repository file trees.
-- Open files and view code.
-- Fetch pull requests.
-- Send selected code or PR diffs to AI for explanation.
+## 🚀 Getting Started
 
-### AI Chat
+1. Download the latest APK from the [Releases](https://github.com/SayanthRock/FREE-AI-ROCK-/releases) page.
+2. Open FREE-AI-ROCK on your Android device.
+3. Enter your GitHub Personal Access Token and Gemini API key in the secure setup screen.
+4. Use **PR Review** to summarize pull request diffs.
+5. Use **Settings** to switch between System Auto, Light, and Dark UI modes.
 
-- Markdown-friendly chat UI.
-- Code explanation prompts.
-- Copy generated code.
-- Save generated code to a local file.
+> Keep your API keys private. FREE-AI-ROCK stores them locally on your device and does not commit or upload them to this repository.
 
-### Image Generation
+## 🧪 Testing
 
-- Prompt input screen.
-- REST-based image generation provider support.
-- Coil-based image preview.
+Run unit tests locally with:
 
-### Theme Engine
+```bash
+gradle testDebugUnitTest --stacktrace
+```
 
-- System Auto, Light, and Dark modes.
-- Charcoal and white developer-focused palette.
-- Minimal rounded UI blocks.
-- Code-friendly typography.
+The repository also includes a dedicated GitHub Actions workflow:
 
-## Repository Structure
+```text
+.github/workflows/android-test.yml
+```
+
+Test reports are uploaded as workflow artifacts for inspection.
+
+## 📦 CI/CD Workflows
+
+| Workflow | Purpose |
+|---|---|
+| `android-test.yml` | Runs JUnit/MockK unit tests |
+| `android-build.yml` | Builds debug APK and uploads artifact |
+| `android-release.yml` | Builds signed APK/AAB, archives `mapping.txt`, and creates tagged releases |
+
+## 🔐 Signed Release Setup
+
+Add these repository secrets before running the signed release workflow:
+
+```text
+KEYSTORE_BASE64
+KEY_ALIAS
+STORE_PASSWORD
+KEY_PASSWORD
+```
+
+Then create a release tag:
+
+```bash
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+The release workflow will generate signed APK/AAB artifacts and attach the matching R8 mapping file.
+
+## 🧯 Release Crash Debugging
+
+See:
+
+```text
+docs/RELEASE_CRASH_DEBUGGING.md
+```
+
+This guide explains how to capture release crashes with ADB, decode obfuscated stack traces with `retrace`, and upload mapping files to Google Play Console.
+
+## 📂 Repository Structure
 
 ```text
 FREE-AI-ROCK-/
+├── .github/workflows/
+│   ├── android-build.yml
+│   ├── android-release.yml
+│   └── android-test.yml
 ├── app/
-│   └── src/main/java/com/sayanthrock/freeairock/
-│       ├── MainActivity.kt
-│       ├── data/
-│       │   ├── AiService.kt
-│       │   ├── GitHubApi.kt
-│       │   └── RepositoryModels.kt
-│       └── ui/theme/
-│           └── Theme.kt
+│   ├── build.gradle.kts
+│   ├── proguard-rules.pro
+│   └── src/
+│       ├── main/java/com/sayanthrock/freeairock/
+│       └── test/java/com/sayanthrock/freeairock/
 ├── docs/
-│   ├── ARCHITECTURE.md
-│   └── ROADMAP.md
-├── .github/workflows/android-build.yml
+│   └── RELEASE_CRASH_DEBUGGING.md
 ├── build.gradle.kts
 ├── settings.gradle.kts
 └── README.md
 ```
 
-## Security Rules
+## 👨‍💻 Developed By
 
-- Never hardcode GitHub tokens or AI API keys.
-- Store tokens only through secure storage in a later implementation step.
-- Use OAuth or user-provided PAT only with clear user consent.
-- Keep file writes inside Android SAF, not unsafe raw storage paths.
+**Sayanth Rock**  
+Designed and developed in Kerala, India.
 
-## Development Status
-
-This repository now contains the first project foundation. The next implementation step is to wire real ViewModels, secure token storage, OAuth/PAT login, and working API screens.
-
-## Brand
-
-Built by **@SayanthRock** as a free AI developer tool.
+[Explore my GitHub](https://github.com/SayanthRock)
