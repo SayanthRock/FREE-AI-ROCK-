@@ -2,33 +2,55 @@ package com.sayanthrock.freeairock.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.sayanthrock.freeairock.data.image.ImageRepository
-import com.sayanthrock.freeairock.data.image.ImageToolState
+import com.sayanthrock.freeairock.data.image.AiImageRenderer
+import com.sayanthrock.freeairock.data.image.BitmapImageState
+import com.sayanthrock.freeairock.data.storage.SecureStorageManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class ImageViewModel(
-    private val repository: ImageRepository
+    private val secureStorage: SecureStorageManager
 ) : ViewModel() {
 
-    private val _state = MutableStateFlow<ImageToolState>(ImageToolState.Idle)
-    val state: StateFlow<ImageToolState> = _state.asStateFlow()
+    private val _uiState = MutableStateFlow<BitmapImageState>(BitmapImageState.Idle)
+    val uiState: StateFlow<BitmapImageState> = _uiState.asStateFlow()
 
-    fun submit(prompt: String) {
+    private var renderer: AiImageRenderer? = secureStorage.getGeminiKey()?.let(::AiImageRenderer)
+
+    fun refreshRenderer() {
+        renderer = secureStorage.getGeminiKey()?.let(::AiImageRenderer)
+    }
+
+    fun create(prompt: String) {
+        if (prompt.isBlank()) {
+            _uiState.value = BitmapImageState.Error("Prompt cannot be empty")
+            return
+        }
+
         viewModelScope.launch {
-            _state.value = ImageToolState.Loading
+            _uiState.value = BitmapImageState.Loading
 
-            val result = repository.requestPreview(prompt)
-            _state.value = result.fold(
-                onSuccess = { url -> ImageToolState.Ready(url, prompt) },
-                onFailure = { error -> ImageToolState.Failure(error.localizedMessage ?: "Request failed") }
-            )
+            val activeRenderer = renderer
+            if (activeRenderer == null) {
+                _uiState.value = BitmapImageState.Error("Gemini key missing. Add it in setup first.")
+                return@launch
+            }
+
+            activeRenderer.render(prompt)
+                .onSuccess { bitmap ->
+                    _uiState.value = BitmapImageState.Success(bitmap)
+                }
+                .onFailure { error ->
+                    _uiState.value = BitmapImageState.Error(
+                        error.localizedMessage ?: "Image request failed"
+                    )
+                }
         }
     }
 
     fun reset() {
-        _state.value = ImageToolState.Idle
+        _uiState.value = BitmapImageState.Idle
     }
 }
