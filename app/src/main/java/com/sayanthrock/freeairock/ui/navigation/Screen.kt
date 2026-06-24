@@ -16,6 +16,12 @@ sealed class Screen(
         icon = Icons.Filled.Code
     )
 
+    data object PullRequestReview : Screen(
+        route = "pull_request_review",
+        title = "PR Review",
+        icon = Icons.Filled.Code
+    )
+
     data object ImageStudio : Screen(
         route = "image_studio",
         title = "Image Studio",
