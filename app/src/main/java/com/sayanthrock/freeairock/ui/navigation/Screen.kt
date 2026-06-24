@@ -1,10 +1,10 @@
 package com.sayanthrock.freeairock.ui.navigation
 
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Brush
-import androidx.compose.material.icons.filled.Code
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.RateReview
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.ui.graphics.vector.ImageVector
 
 sealed class Screen(
@@ -15,19 +15,19 @@ sealed class Screen(
     data object CodeAnalyzer : Screen(
         route = "code_analyzer",
         title = "Code AI",
-        icon = Icons.Filled.Code
+        icon = Icons.Filled.Home
     )
 
     data object PullRequestReview : Screen(
         route = "pr_review",
         title = "PR Review",
-        icon = Icons.Filled.RateReview
+        icon = Icons.Filled.List
     )
 
     data object ImageStudio : Screen(
         route = "image_studio",
         title = "Image Studio",
-        icon = Icons.Filled.Brush
+        icon = Icons.Filled.Settings
     )
 
     data object About : Screen(
