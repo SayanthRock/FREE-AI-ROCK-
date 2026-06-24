@@ -11,13 +11,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.RadioButton
@@ -61,10 +56,11 @@ fun AboutScreen(
         Spacer(modifier = Modifier.height(32.dp))
 
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(
-                imageVector = Icons.Filled.Settings,
-                contentDescription = "Theme",
-                tint = MaterialTheme.colorScheme.primary
+            Text(
+                text = "UI",
+                style = MaterialTheme.typography.titleMedium,
+                fontFamily = FontFamily.Monospace,
+                color = MaterialTheme.colorScheme.primary
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
@@ -107,10 +103,11 @@ fun AboutScreen(
         Spacer(modifier = Modifier.height(32.dp))
 
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(
-                imageVector = Icons.Filled.Person,
-                contentDescription = "Developer",
-                tint = MaterialTheme.colorScheme.primary
+            Text(
+                text = "DEV",
+                style = MaterialTheme.typography.titleMedium,
+                fontFamily = FontFamily.Monospace,
+                color = MaterialTheme.colorScheme.primary
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
@@ -143,8 +140,6 @@ fun AboutScreen(
                 contentColor = MaterialTheme.colorScheme.primary
             )
         ) {
-            Icon(Icons.Filled.Home, contentDescription = "GitHub")
-            Spacer(modifier = Modifier.width(8.dp))
             Text("Explore on GitHub", fontFamily = FontFamily.Monospace)
         }
     }
