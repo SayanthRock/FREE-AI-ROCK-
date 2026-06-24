@@ -45,6 +45,13 @@ class MainActivity : ComponentActivity() {
                             }
                         )
                     },
+                    reviewContent = { modifier ->
+                        PlaceholderPanel(
+                            title = "PR Review AI",
+                            body = "PR diff endpoint, AI summarizer, ReviewViewModel, and ReviewScreen are ready. Wire ReviewViewModel with GitHubApiService to enable live PR analysis.",
+                            modifier = modifier
+                        )
+                    },
                     studioContent = { modifier ->
                         PlaceholderPanel(
                             title = "Image Studio",
