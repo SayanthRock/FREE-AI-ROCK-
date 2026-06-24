@@ -126,3 +126,7 @@ No navigation crash.
 ## Rule
 
 Patch any failed check in FREE-AI-ROCK before copying the architecture into Rock DevOps.
+
+## Build Gate
+
+Run the Android Build workflow and use the generated debug APK for this checklist.
