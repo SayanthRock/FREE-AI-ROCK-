@@ -24,6 +24,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.sayanthrock.freeairock.data.storage.SecureStorageManager
+import com.sayanthrock.freeairock.ui.HomeScaffold
+import com.sayanthrock.freeairock.ui.PlaceholderPanel
 import com.sayanthrock.freeairock.ui.theme.FreeAiRockTheme
 
 class MainActivity : ComponentActivity() {
@@ -34,10 +36,21 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             FreeAiRockTheme {
-                SetupScreen(
-                    onSave = { githubToken, geminiKey ->
-                        secureStorage.saveGitHubToken(githubToken)
-                        secureStorage.saveGeminiKey(geminiKey)
+                HomeScaffold(
+                    codeContent = {
+                        SetupScreen(
+                            onSave = { githubToken, geminiKey ->
+                                secureStorage.saveGitHubToken(githubToken)
+                                secureStorage.saveGeminiKey(geminiKey)
+                            }
+                        )
+                    },
+                    studioContent = { modifier ->
+                        PlaceholderPanel(
+                            title = "Image Studio",
+                            body = "Image renderer, bitmap state, and gallery save helper are ready. Full creation UI will connect here next.",
+                            modifier = modifier
+                        )
                     }
                 )
             }
