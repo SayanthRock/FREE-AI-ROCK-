@@ -23,16 +23,27 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import com.sayanthrock.freeairock.data.github.GitHubApiService
 import com.sayanthrock.freeairock.data.storage.SecureStorageManager
 import com.sayanthrock.freeairock.ui.HomeScaffold
 import com.sayanthrock.freeairock.ui.PlaceholderPanel
+import com.sayanthrock.freeairock.ui.ReviewScreen
+import com.sayanthrock.freeairock.ui.ReviewViewModel
 import com.sayanthrock.freeairock.ui.theme.FreeAiRockTheme
+import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         val secureStorage = SecureStorageManager(this)
+        val githubApiService = Retrofit.Builder()
+            .baseUrl("https://api.github.com/")
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(GitHubApiService::class.java)
+        val reviewViewModel = ReviewViewModel(secureStorage, githubApiService)
 
         setContent {
             FreeAiRockTheme {
@@ -46,9 +57,8 @@ class MainActivity : ComponentActivity() {
                         )
                     },
                     reviewContent = { modifier ->
-                        PlaceholderPanel(
-                            title = "PR Review AI",
-                            body = "PR diff endpoint, AI summarizer, ReviewViewModel, and ReviewScreen are ready. Wire ReviewViewModel with GitHubApiService to enable live PR analysis.",
+                        ReviewScreen(
+                            viewModel = reviewViewModel,
                             modifier = modifier
                         )
                     },
