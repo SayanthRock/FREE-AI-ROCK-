@@ -12,9 +12,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Code
-import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -62,7 +62,7 @@ fun AboutScreen(
 
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(
-                imageVector = Icons.Filled.Palette,
+                imageVector = Icons.Filled.Settings,
                 contentDescription = "Theme",
                 tint = MaterialTheme.colorScheme.primary
             )
@@ -143,7 +143,7 @@ fun AboutScreen(
                 contentColor = MaterialTheme.colorScheme.primary
             )
         ) {
-            Icon(Icons.Filled.Code, contentDescription = "GitHub")
+            Icon(Icons.Filled.Home, contentDescription = "GitHub")
             Spacer(modifier = Modifier.width(8.dp))
             Text("Explore on GitHub", fontFamily = FontFamily.Monospace)
         }
