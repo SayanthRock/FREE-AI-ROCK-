@@ -3,6 +3,7 @@ package com.sayanthrock.freeairock.ui.navigation
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Brush
 import androidx.compose.material.icons.filled.Code
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.RateReview
 import androidx.compose.ui.graphics.vector.ImageVector
 
@@ -27,5 +28,11 @@ sealed class Screen(
         route = "image_studio",
         title = "Image Studio",
         icon = Icons.Filled.Brush
+    )
+
+    data object About : Screen(
+        route = "about",
+        title = "About",
+        icon = Icons.Filled.Info
     )
 }
