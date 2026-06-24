@@ -3,6 +3,7 @@ package com.sayanthrock.freeairock
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.viewModels
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -27,7 +28,10 @@ import androidx.compose.ui.unit.dp
 import com.sayanthrock.freeairock.data.github.GitHubApiService
 import com.sayanthrock.freeairock.data.storage.SecureStorageManager
 import com.sayanthrock.freeairock.ui.AboutScreen
+import com.sayanthrock.freeairock.ui.AppViewModel
+import com.sayanthrock.freeairock.ui.AppViewModelFactory
 import com.sayanthrock.freeairock.ui.HomeScaffold
+import com.sayanthrock.freeairock.ui.ImageViewModel
 import com.sayanthrock.freeairock.ui.PlaceholderPanel
 import com.sayanthrock.freeairock.ui.ReviewScreen
 import com.sayanthrock.freeairock.ui.ReviewViewModel
@@ -37,16 +41,27 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
 class MainActivity : ComponentActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
 
-        val secureStorage = SecureStorageManager(this)
-        val githubApiService = Retrofit.Builder()
+    private val secureStorage by lazy { SecureStorageManager(this) }
+
+    private val githubApiService by lazy {
+        Retrofit.Builder()
             .baseUrl("https://api.github.com/")
             .addConverterFactory(GsonConverterFactory.create())
             .build()
             .create(GitHubApiService::class.java)
-        val reviewViewModel = ReviewViewModel(secureStorage, githubApiService)
+    }
+
+    private val viewModelFactory by lazy {
+        AppViewModelFactory(secureStorage, githubApiService)
+    }
+
+    private val appViewModel: AppViewModel by viewModels { viewModelFactory }
+    private val reviewViewModel: ReviewViewModel by viewModels { viewModelFactory }
+    private val imageViewModel: ImageViewModel by viewModels { viewModelFactory }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
 
         setContent {
             var appTheme by remember { mutableStateOf(ThemeMode.SYSTEM) }
@@ -61,8 +76,8 @@ class MainActivity : ComponentActivity() {
                     codeContent = {
                         SetupScreen(
                             onSave = { githubToken, geminiKey ->
-                                secureStorage.saveGitHubToken(githubToken)
-                                secureStorage.saveGeminiKey(geminiKey)
+                                appViewModel.saveKeys(githubToken, geminiKey)
+                                imageViewModel.refreshRenderer()
                             }
                         )
                     },
