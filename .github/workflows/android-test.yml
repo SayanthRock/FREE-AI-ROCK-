@@ -27,8 +27,11 @@ jobs:
         with:
           gradle-version: '8.7'
 
+      - name: Print Gradle environment
+        run: gradle --version
+
       - name: Run Debug Unit Tests
-        run: gradle testDebugUnitTest --stacktrace
+        run: gradle testDebugUnitTest --no-daemon --warning-mode all
 
       - name: Upload Unit Test Reports
         if: always()
