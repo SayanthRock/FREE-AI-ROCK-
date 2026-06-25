@@ -49,8 +49,36 @@ jobs:
 
       - name: Install Android build tools for signing
         run: |
-          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "build-tools;29.0.3"
-          ls "$ANDROID_HOME/build-tools/29.0.3"
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "build-tools;35.0.0"
+          ls "$ANDROID_HOME/build-tools/35.0.0"
+          echo "$ANDROID_HOME/build-tools/35.0.0" >> "$GITHUB_PATH"
+
+      - name: Validate release keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+        run: |
+          set -euo pipefail
+          if [ -z "${KEYSTORE_BASE64:-}" ]; then
+            echo "KEYSTORE_BASE64 secret is missing"
+            exit 1
+          fi
+          if [ -z "${KEY_ALIAS:-}" ]; then
+            echo "KEY_ALIAS secret is missing"
+            exit 1
+          fi
+          if [ -z "${STORE_PASSWORD:-}" ]; then
+            echo "STORE_PASSWORD secret is missing"
+            exit 1
+          fi
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > release-keystore.jks
+          keytool -list -v \
+            -keystore release-keystore.jks \
+            -storepass "$STORE_PASSWORD" \
+            -alias "$KEY_ALIAS" \
+            -storetype PKCS12 >/dev/null
+          echo "Release keystore decoded and alias validated"
 
       - name: Sign APK
         uses: r0adkll/sign-android-release@v1
