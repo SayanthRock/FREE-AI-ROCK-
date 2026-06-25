@@ -37,6 +37,7 @@ import com.sayanthrock.freeairock.ui.ReviewScreen
 import com.sayanthrock.freeairock.ui.ReviewViewModel
 import com.sayanthrock.freeairock.ui.ThemeMode
 import com.sayanthrock.freeairock.ui.theme.FreeAiRockTheme
+import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
@@ -44,9 +45,25 @@ class MainActivity : ComponentActivity() {
 
     private val secureStorage by lazy { SecureStorageManager(this) }
 
+    private val okHttpClient by lazy {
+        OkHttpClient.Builder()
+            .addInterceptor { chain ->
+                val requestBuilder = chain.request().newBuilder()
+                val token = secureStorage.getGitHubToken()
+
+                if (!token.isNullOrBlank()) {
+                    requestBuilder.header("Authorization", "Bearer $token")
+                }
+
+                chain.proceed(requestBuilder.build())
+            }
+            .build()
+    }
+
     private val githubApiService by lazy {
         Retrofit.Builder()
             .baseUrl("https://api.github.com/")
+            .client(okHttpClient)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
             .create(GitHubApiService::class.java)
