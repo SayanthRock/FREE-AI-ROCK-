@@ -29,8 +29,15 @@ jobs:
       - name: Print Gradle environment
         run: gradle --version
 
+      - name: Print Android SDK environment
+        run: |
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
+          ls "$ANDROID_HOME/platforms" || true
+          ls "$ANDROID_HOME/build-tools" || true
+
       - name: Build debug APK
-        run: gradle assembleDebug --no-daemon --warning-mode all
+        run: gradle assembleDebug --no-daemon --warning-mode all --stacktrace
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
