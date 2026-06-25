@@ -85,12 +85,13 @@ class MainActivity : ComponentActivity() {
 
             FreeAiRockTheme(darkTheme = darkTheme) {
                 HomeScaffold(
-                    codeContent = {
+                    codeContent = { modifier ->
                         SetupScreen(
                             onSave = { githubToken, geminiKey ->
                                 appViewModel.saveKeys(githubToken, geminiKey)
                                 imageViewModel.refreshRenderer()
-                            }
+                            },
+                            modifier = modifier
                         )
                     },
                     reviewContent = { modifier ->
@@ -121,14 +122,15 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 private fun SetupScreen(
-    onSave: (githubToken: String, geminiKey: String) -> Unit
+    onSave: (githubToken: String, geminiKey: String) -> Unit,
+    modifier: Modifier = Modifier
 ) {
     var githubToken by remember { mutableStateOf("") }
     var geminiKey by remember { mutableStateOf("") }
     var savedMessage by remember { mutableStateOf<String?>(null) }
 
     Surface(
-        modifier = Modifier.fillMaxSize(),
+        modifier = modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background
     ) {
         Column(
