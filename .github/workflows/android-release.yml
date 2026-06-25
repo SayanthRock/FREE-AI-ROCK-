@@ -47,6 +47,11 @@ jobs:
           path: android-release-build.log
           if-no-files-found: warn
 
+      - name: Install Android build tools for signing
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "build-tools;29.0.3"
+          ls "$ANDROID_HOME/build-tools/29.0.3"
+
       - name: Sign APK
         uses: r0adkll/sign-android-release@v1
         id: sign_apk
