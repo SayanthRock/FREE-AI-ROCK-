@@ -47,6 +47,16 @@ jobs:
           path: android-release-build.log
           if-no-files-found: warn
 
+      - name: Upload Unsigned Release Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: FREE-AI-ROCK-unsigned-release
+          path: |
+            app/build/outputs/apk/release/*.apk
+            app/build/outputs/bundle/release/*.aab
+            app/build/outputs/mapping/release/mapping.txt
+          if-no-files-found: warn
+
       - name: Install Android build tools for signing
         run: |
           yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "build-tools;35.0.0"
