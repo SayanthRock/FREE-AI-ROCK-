@@ -1,0 +1,57 @@
+name: Android Unsigned Release Build
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+jobs:
+  unsigned-release:
+    name: Build Unsigned Release APK and AAB
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+
+      - name: Print Gradle environment
+        run: gradle --version
+
+      - name: Print Android SDK environment
+        run: |
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
+          ls "$ANDROID_HOME/platforms" || true
+          ls "$ANDROID_HOME/build-tools" || true
+
+      - name: Build Unsigned Release APK and AAB
+        run: bash -o pipefail -c 'gradle bundleRelease assembleRelease -Pandroid.useAndroidX=true -Pandroid.suppressUnsupportedCompileSdk=35 --no-daemon --warning-mode all --stacktrace 2>&1 | tee android-unsigned-release-build.log'
+
+      - name: Upload Unsigned Release Build Log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: FREE-AI-ROCK-unsigned-release-build-log
+          path: android-unsigned-release-build.log
+          if-no-files-found: warn
+
+      - name: Upload Unsigned Release Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: FREE-AI-ROCK-unsigned-release
+          path: |
+            app/build/outputs/apk/release/*.apk
+            app/build/outputs/bundle/release/*.aab
+            app/build/outputs/mapping/release/mapping.txt
+          if-no-files-found: warn
