@@ -12,7 +12,7 @@
 
 - **Code AI:** Explore GitHub repositories, fetch raw code files, and generate approachable plain-English explanations of technical structures.
 - **PR Review:** Fetch raw Git diffs through the GitHub API and send them to Gemini 1.5 Flash for high-level summaries, risk notes, and testing guidance.
-- **Image Studio Foundation:** Uses a Gemini image renderer pipeline with bitmap state handling and native gallery saving support.
+- **Image Studio Foundation:** Keeps the Image Studio screen and bitmap state model stable while the production image renderer remains disabled for this build.
 - **Settings & About:** Switch between System Auto, Light, and Dark modes while keeping the FREE-AI-ROCK charcoal/white identity.
 - **Secure Setup:** Store user-provided GitHub and Gemini keys locally using encrypted Android storage.
 
@@ -24,8 +24,8 @@ FREE-AI-ROCK prioritizes local security, lifecycle resilience, and production sa
 - **Encrypted local storage:** Uses AndroidX Security Crypto and encrypted preferences for local key storage.
 - **Lifecycle-safe ViewModels:** A unified `ViewModelProvider.Factory` keeps ViewModel state stable across rotation, theme changes, and Activity recreation.
 - **Scoped storage:** Media output is written through Android `MediaStore` to `Pictures/FREE-AI-ROCK` without broad storage access.
-- **Release hardening:** R8/ProGuard rules protect Retrofit, Gson models, AndroidX Security Crypto, and the Google AI SDK.
-- **Crash recovery:** Release builds archive `mapping.txt` so obfuscated production crashes can be decoded with Android retrace.
+- **Release hardening:** ProGuard/R8 compatibility rules are included for Retrofit, Gson models, AndroidX Security Crypto, and the Google AI SDK.
+- **Release traceability:** The release workflow uploads build logs, unsigned artifacts, signed artifacts when signing secrets are configured, and `mapping.txt` when generated.
 
 ## 🛠️ Tech Stack
 
@@ -39,7 +39,7 @@ FREE-AI-ROCK prioritizes local security, lifecycle resilience, and production sa
 | Security | AndroidX Security Crypto, Android Keystore-backed encrypted preferences |
 | Storage | Android MediaStore, scoped storage |
 | Testing | JUnit 4, MockK, Coroutines Test, AndroidX Core Testing |
-| CI/CD | GitHub Actions debug build, unit tests, signed release, R8 mapping archive |
+| CI/CD | GitHub Actions debug build, unit tests, unsigned release verification, signed release, GitHub Releases |
 
 ## 📱 App Sections
 
@@ -82,11 +82,17 @@ Test reports are uploaded as workflow artifacts for inspection.
 |---|---|
 | `android-test.yml` | Runs JUnit/MockK unit tests |
 | `android-build.yml` | Builds debug APK and uploads artifact |
-| `android-release.yml` | Builds signed APK/AAB, archives `mapping.txt`, and creates tagged releases |
+| `android-release.yml` | Builds release APK/AAB, uploads unsigned artifacts, signs when secrets are configured, and creates tagged releases |
 
 ## 🔐 Signed Release Setup
 
-Add these repository secrets before running the signed release workflow:
+The release workflow now verifies build health before signing by uploading this artifact:
+
+```text
+FREE-AI-ROCK-unsigned-release
+```
+
+Signed APK/AAB output still requires these Repository Secrets:
 
 ```text
 KEYSTORE_BASE64
@@ -95,14 +101,26 @@ STORE_PASSWORD
 KEY_PASSWORD
 ```
 
-Then create a release tag:
+Add them under:
+
+```text
+Settings → Secrets and variables → Actions → Repository secrets
+```
+
+Detailed setup and troubleshooting:
+
+```text
+docs/ANDROID_RELEASE_SIGNING.md
+```
+
+For production publishing, create and push a release tag:
 
 ```bash
 git tag v1.0.0
 git push origin v1.0.0
 ```
 
-The release workflow will generate signed APK/AAB artifacts and attach the matching R8 mapping file.
+The release workflow will generate release APK/AAB outputs, sign them when the required secrets are available, and attach signed assets to GitHub Releases for tags matching `v*`.
 
 ## 🧯 Release Crash Debugging
 
@@ -129,6 +147,7 @@ FREE-AI-ROCK-/
 │       ├── main/java/com/sayanthrock/freeairock/
 │       └── test/java/com/sayanthrock/freeairock/
 ├── docs/
+│   ├── ANDROID_RELEASE_SIGNING.md
 │   └── RELEASE_CRASH_DEBUGGING.md
 ├── build.gradle.kts
 ├── settings.gradle.kts
