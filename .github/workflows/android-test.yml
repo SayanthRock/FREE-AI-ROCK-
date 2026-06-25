@@ -31,7 +31,7 @@ jobs:
         run: gradle --version
 
       - name: Run Debug Unit Tests
-        run: gradle testDebugUnitTest --no-daemon --warning-mode all
+        run: gradle testDebugUnitTest -Pandroid.useAndroidX=true -Pandroid.suppressUnsupportedCompileSdk=35 --no-daemon --warning-mode all
 
       - name: Upload Unit Test Reports
         if: always()
