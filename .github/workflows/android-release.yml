@@ -29,8 +29,23 @@ jobs:
         with:
           gradle-version: '8.7'
 
+      - name: Print Android SDK environment
+        run: |
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
+          ls "$ANDROID_HOME/platforms" || true
+          ls "$ANDROID_HOME/build-tools" || true
+
       - name: Build Release Bundle and APK
-        run: gradle bundleRelease assembleRelease --stacktrace
+        run: bash -o pipefail -c 'gradle bundleRelease assembleRelease -Pandroid.useAndroidX=true -Pandroid.suppressUnsupportedCompileSdk=35 --no-daemon --warning-mode all --stacktrace 2>&1 | tee android-release-build.log'
+
+      - name: Upload Release Build Log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: FREE-AI-ROCK-release-build-log
+          path: android-release-build.log
+          if-no-files-found: warn
 
       - name: Sign APK
         uses: r0adkll/sign-android-release@v1
