@@ -37,7 +37,7 @@ jobs:
           ls "$ANDROID_HOME/build-tools" || true
 
       - name: Build debug APK
-        run: gradle assembleDebug --no-daemon --warning-mode all --stacktrace 2>&1 | tee android-build.log
+        run: bash -o pipefail -c 'gradle assembleDebug --no-daemon --warning-mode all --stacktrace 2>&1 | tee android-build.log'
 
       - name: Upload build log
         if: always()
