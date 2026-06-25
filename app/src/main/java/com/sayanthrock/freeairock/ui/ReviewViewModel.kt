@@ -19,6 +19,9 @@ class ReviewViewModel(
     private val _state = MutableStateFlow<CodeAnalysisState>(CodeAnalysisState.Idle)
     val state: StateFlow<CodeAnalysisState> = _state.asStateFlow()
 
+    private var cachedGeminiKey: String? = null
+    private var cachedAnalyzer: AiCodeAnalyzer? = null
+
     fun run(owner: String, repo: String, numberText: String) {
         viewModelScope.launch {
             _state.value = CodeAnalysisState.Loading
@@ -26,11 +29,20 @@ class ReviewViewModel(
                 val token = storage.getGeminiKey() ?: error("Gemini key missing")
                 val number = numberText.trim().toIntOrNull() ?: error("Invalid number")
                 val diffText = service.getPullRequestDiff(owner.trim(), repo.trim(), number).string()
-                val result = AiCodeAnalyzer(token).summarizePullRequest(owner.trim(), repo.trim(), number, diffText)
+                val result = getAnalyzer(token).summarizePullRequest(owner.trim(), repo.trim(), number, diffText)
                 _state.value = CodeAnalysisState.Success(result)
             } catch (error: Exception) {
                 _state.value = CodeAnalysisState.Error(error.localizedMessage ?: "Review failed")
             }
         }
+    }
+
+    private fun getAnalyzer(geminiKey: String): AiCodeAnalyzer {
+        if (cachedAnalyzer == null || cachedGeminiKey != geminiKey) {
+            cachedGeminiKey = geminiKey
+            cachedAnalyzer = AiCodeAnalyzer(geminiKey)
+        }
+
+        return cachedAnalyzer ?: error("AI analyzer unavailable")
     }
 }
