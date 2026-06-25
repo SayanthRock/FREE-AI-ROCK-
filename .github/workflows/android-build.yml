@@ -37,7 +37,15 @@ jobs:
           ls "$ANDROID_HOME/build-tools" || true
 
       - name: Build debug APK
-        run: gradle assembleDebug --no-daemon --warning-mode all --stacktrace
+        run: gradle assembleDebug --no-daemon --warning-mode all --stacktrace 2>&1 | tee android-build.log
+
+      - name: Upload build log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: FREE-AI-ROCK-build-log
+          path: android-build.log
+          if-no-files-found: warn
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
