@@ -2,6 +2,7 @@
 
 **FREE-AI-ROCK** is an advanced AI-powered developer toolkit built natively for Android. It bridges the GitHub API with Google's Gemini generative models to explore repositories, summarize complex pull requests, explain code, and prepare AI-assisted development workflows inside a strict, system-aware minimalist interface.
 
+[![Android Release Build](https://github.com/SayanthRock/FREE-AI-ROCK-/actions/workflows/android-release.yml/badge.svg)](https://github.com/SayanthRock/FREE-AI-ROCK-/actions/workflows/android-release.yml)
 ![Tests](https://img.shields.io/github/actions/workflow/status/SayanthRock/FREE-AI-ROCK-/android-test.yml?label=Tests)
 ![Debug Build](https://img.shields.io/github/actions/workflow/status/SayanthRock/FREE-AI-ROCK-/android-build.yml?label=Debug%20Build)
 ![Release](https://img.shields.io/github/v/release/SayanthRock/FREE-AI-ROCK-)
