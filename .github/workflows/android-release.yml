@@ -82,7 +82,7 @@ jobs:
             echo "STORE_PASSWORD secret is missing"
             exit 1
           fi
-          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > release-keystore.jks
+          printf '%s' "$KEYSTORE_BASE64" | tr -d '\r\n\t ' | base64 --decode > release-keystore.jks
           keytool -list -v \
             -keystore release-keystore.jks \
             -storepass "$STORE_PASSWORD" \
