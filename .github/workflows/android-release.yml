@@ -63,63 +63,158 @@ jobs:
           ls "$ANDROID_HOME/build-tools/35.0.0"
           echo "$ANDROID_HOME/build-tools/35.0.0" >> "$GITHUB_PATH"
 
-      - name: Validate release keystore
+      - name: Prepare and validate release keystore
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
           set -euo pipefail
-          if [ -z "${KEYSTORE_BASE64:-}" ]; then
-            echo "KEYSTORE_BASE64 secret is missing"
+
+          fail() {
+            echo "::error::$1"
             exit 1
+          }
+
+          require_secret() {
+            local name="$1"
+            local value="${!name:-}"
+            if [ -z "$value" ]; then
+              fail "$name secret is missing. Add it under Settings → Secrets and variables → Actions → Repository secrets."
+            fi
+          }
+
+          require_secret KEYSTORE_BASE64
+          require_secret KEY_ALIAS
+          require_secret STORE_PASSWORD
+          require_secret KEY_PASSWORD
+
+          if printf '%s' "$KEYSTORE_BASE64" | grep -q '\.\.\.'; then
+            fail "KEYSTORE_BASE64 contains placeholder dots (...). Paste the full Base64 text from release-keystore.jks."
           fi
-          if [ -z "${KEY_ALIAS:-}" ]; then
-            echo "KEY_ALIAS secret is missing"
-            exit 1
+
+          CLEAN_KEYSTORE_BASE64="$(printf '%s' "$KEYSTORE_BASE64" | sed -e 's/^[[:space:]]*KEYSTORE_BASE64[[:space:]]*[:=][[:space:]]*//' -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+          CLEAN_KEYSTORE_BASE64="$(printf '%s' "$CLEAN_KEYSTORE_BASE64" | sed -e "s/^[\"']//" -e "s/[\"']$//")"
+
+          case "$CLEAN_KEYSTORE_BASE64" in
+            *,*) CLEAN_KEYSTORE_BASE64="${CLEAN_KEYSTORE_BASE64##*,}" ;;
+          esac
+
+          CLEAN_KEYSTORE_BASE64="$(printf '%s' "$CLEAN_KEYSTORE_BASE64" | tr -d '\r\n\t ')"
+
+          if [ ${#CLEAN_KEYSTORE_BASE64} -lt 100 ]; then
+            fail "KEYSTORE_BASE64 is too short. You probably pasted a filename, label, or incomplete value."
           fi
-          if [ -z "${STORE_PASSWORD:-}" ]; then
-            echo "STORE_PASSWORD secret is missing"
-            exit 1
+
+          if ! printf '%s' "$CLEAN_KEYSTORE_BASE64" | grep -Eq '^[A-Za-z0-9+/=]+$'; then
+            fail "KEYSTORE_BASE64 has invalid characters. Paste only raw Base64 text, with no prompts, labels, quotes, or extra words."
           fi
-          printf '%s' "$KEYSTORE_BASE64" | tr -d '\r\n\t ' | base64 --decode > release-keystore.jks
-          keytool -list -v \
+
+          case $(( ${#CLEAN_KEYSTORE_BASE64} % 4 )) in
+            0) ;;
+            2) CLEAN_KEYSTORE_BASE64="${CLEAN_KEYSTORE_BASE64}==" ;;
+            3) CLEAN_KEYSTORE_BASE64="${CLEAN_KEYSTORE_BASE64}=" ;;
+            *) fail "KEYSTORE_BASE64 length is invalid. Regenerate it with: base64 -w 0 release-keystore.jks" ;;
+          esac
+
+          if ! printf '%s' "$CLEAN_KEYSTORE_BASE64" | base64 --decode > release-keystore.jks; then
+            fail "KEYSTORE_BASE64 could not be decoded. Regenerate it from the actual release-keystore.jks file."
+          fi
+
+          if [ ! -s release-keystore.jks ]; then
+            fail "Decoded keystore file is empty."
+          fi
+
+          if ! keytool -list -v \
             -keystore release-keystore.jks \
             -storepass "$STORE_PASSWORD" \
-            -alias "$KEY_ALIAS" \
-            -storetype PKCS12 >/dev/null
+            -alias "$KEY_ALIAS" >/dev/null; then
+            fail "Keystore decoded, but STORE_PASSWORD or KEY_ALIAS is wrong. Expected alias: $KEY_ALIAS."
+          fi
+
           echo "Release keystore decoded and alias validated"
 
       - name: Sign APK
-        uses: r0adkll/sign-android-release@v1
-        id: sign_apk
-        with:
-          releaseDirectory: app/build/outputs/apk/release
-          signingKeyBase64: ${{ secrets.KEYSTORE_BASE64 }}
-          alias: ${{ secrets.KEY_ALIAS }}
-          keyStorePassword: ${{ secrets.STORE_PASSWORD }}
-          keyPassword: ${{ secrets.KEY_PASSWORD }}
-          buildToolsVersion: 35.0.0
+        env:
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+
+          mkdir -p signed/apk
+          apks=(app/build/outputs/apk/release/*.apk)
+
+          if [ ${#apks[@]} -eq 0 ]; then
+            echo "::error::No release APK found under app/build/outputs/apk/release"
+            exit 1
+          fi
+
+          for apk in "${apks[@]}"; do
+            name="$(basename "$apk" .apk)"
+            aligned="signed/apk/${name}-aligned.apk"
+            signed="signed/apk/${name}-signed.apk"
+
+            zipalign -f -p 4 "$apk" "$aligned"
+
+            apksigner sign \
+              --ks release-keystore.jks \
+              --ks-key-alias "$KEY_ALIAS" \
+              --ks-pass "pass:$STORE_PASSWORD" \
+              --key-pass "pass:$KEY_PASSWORD" \
+              --out "$signed" \
+              "$aligned"
+
+            apksigner verify --verbose "$signed"
+            rm -f "$aligned"
+            echo "Signed APK: $signed"
+          done
 
       - name: Sign AAB
-        uses: r0adkll/sign-android-release@v1
-        id: sign_aab
-        with:
-          releaseDirectory: app/build/outputs/bundle/release
-          signingKeyBase64: ${{ secrets.KEYSTORE_BASE64 }}
-          alias: ${{ secrets.KEY_ALIAS }}
-          keyStorePassword: ${{ secrets.STORE_PASSWORD }}
-          keyPassword: ${{ secrets.KEY_PASSWORD }}
-          buildToolsVersion: 35.0.0
+        env:
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+
+          mkdir -p signed/aab
+          bundles=(app/build/outputs/bundle/release/*.aab)
+
+          if [ ${#bundles[@]} -eq 0 ]; then
+            echo "::error::No release AAB found under app/build/outputs/bundle/release"
+            exit 1
+          fi
+
+          for aab in "${bundles[@]}"; do
+            name="$(basename "$aab" .aab)"
+            signed="signed/aab/${name}-signed.aab"
+
+            cp "$aab" "$signed"
+
+            jarsigner \
+              -keystore release-keystore.jks \
+              -storepass "$STORE_PASSWORD" \
+              -keypass "$KEY_PASSWORD" \
+              "$signed" \
+              "$KEY_ALIAS"
+
+            jarsigner -verify -verbose -certs "$signed" >/dev/null
+            echo "Signed AAB: $signed"
+          done
 
       - name: Upload Signed Release Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: FREE-AI-ROCK-signed-release
           path: |
-            ${{ steps.sign_apk.outputs.signedReleaseFile }}
-            ${{ steps.sign_aab.outputs.signedReleaseFile }}
+            signed/apk/*.apk
+            signed/aab/*.aab
             app/build/outputs/mapping/release/mapping.txt
+          if-no-files-found: error
 
       - name: Upload R8 Mapping File
         uses: actions/upload-artifact@v4
@@ -133,7 +228,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            ${{ steps.sign_apk.outputs.signedReleaseFile }}
-            ${{ steps.sign_aab.outputs.signedReleaseFile }}
+            signed/apk/*.apk
+            signed/aab/*.aab
             app/build/outputs/mapping/release/mapping.txt
           generate_release_notes: true
