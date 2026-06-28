@@ -126,12 +126,42 @@ jobs:
             fail "Decoded keystore file is empty."
           fi
 
-          if ! keytool -list -v \
+          if ! keytool -list \
+            -keystore release-keystore.jks \
+            -storepass "$STORE_PASSWORD" > keystore-list.txt 2>&1; then
+            cat keystore-list.txt
+            fail "STORE_PASSWORD is wrong, or KEYSTORE_BASE64 was generated from a different keystore file."
+          fi
+
+          if keytool -list -v \
             -keystore release-keystore.jks \
             -storepass "$STORE_PASSWORD" \
-            -alias "$KEY_ALIAS" >/dev/null; then
-            fail "Keystore decoded, but STORE_PASSWORD or KEY_ALIAS is wrong. Expected alias: $KEY_ALIAS."
+            -alias "$KEY_ALIAS" >/dev/null 2>&1; then
+            RESOLVED_KEY_ALIAS="$KEY_ALIAS"
+          else
+            mapfile -t AVAILABLE_ALIASES < <(grep -E '^Alias name:' keystore-list.txt | sed 's/^Alias name: //')
+
+            echo "Configured KEY_ALIAS did not match the keystore."
+            echo "Available alias count: ${#AVAILABLE_ALIASES[@]}"
+
+            if [ ${#AVAILABLE_ALIASES[@]} -eq 1 ]; then
+              RESOLVED_KEY_ALIAS="${AVAILABLE_ALIASES[0]}"
+              echo "Using the only alias found in the keystore: $RESOLVED_KEY_ALIAS"
+            elif [ ${#AVAILABLE_ALIASES[@]} -gt 1 ]; then
+              echo "Available aliases:"
+              printf '  - %s\n' "${AVAILABLE_ALIASES[@]}"
+              fail "KEY_ALIAS is wrong. Update the KEY_ALIAS repository secret to one of the aliases above."
+            else
+              cat keystore-list.txt
+              fail "No alias could be read from the keystore. Check the keystore file and STORE_PASSWORD."
+            fi
           fi
+
+          {
+            echo "KEY_ALIAS_RESOLVED<<EOF"
+            printf '%s\n' "$RESOLVED_KEY_ALIAS"
+            echo "EOF"
+          } >> "$GITHUB_ENV"
 
           echo "Release keystore decoded and alias validated"
 
@@ -161,7 +191,7 @@ jobs:
 
             apksigner sign \
               --ks release-keystore.jks \
-              --ks-key-alias "$KEY_ALIAS" \
+              --ks-key-alias "${KEY_ALIAS_RESOLVED:-$KEY_ALIAS}" \
               --ks-pass "pass:$STORE_PASSWORD" \
               --key-pass "pass:$KEY_PASSWORD" \
               --out "$signed" \
@@ -200,7 +230,7 @@ jobs:
               -storepass "$STORE_PASSWORD" \
               -keypass "$KEY_PASSWORD" \
               "$signed" \
-              "$KEY_ALIAS"
+              "${KEY_ALIAS_RESOLVED:-$KEY_ALIAS}"
 
             jarsigner -verify -verbose -certs "$signed" >/dev/null
             echo "Signed AAB: $signed"
