@@ -81,6 +81,25 @@ Windows PowerShell:
 
 Copy the full one-line content of `release-keystore.base64.txt` into the `KEYSTORE_BASE64` Repository Secret.
 
+## Fix `base64: invalid input`
+
+This error means the `KEYSTORE_BASE64` secret is not clean Base64 text.
+
+Use Termux to regenerate and copy clean text:
+
+```bash
+base64 -w 0 release-keystore.jks > keystore-base64.txt
+base64 -d keystore-base64.txt > test-release-keystore.jks
+keytool -list -v \
+  -keystore test-release-keystore.jks \
+  -storetype PKCS12 \
+  -storepass airock \
+  -alias free-ai-rock
+tr -d '\r\n\t ' < keystore-base64.txt | termux-clipboard-set
+```
+
+Then update the existing GitHub repository secret named `KEYSTORE_BASE64` and paste only the copied Base64 text. Do not paste `KEYSTORE_BASE64 =`, terminal prompts, spaces, or the filename `keystore-base64.txt`.
+
 ## Trigger a fresh release workflow run
 
 For manual verification:
