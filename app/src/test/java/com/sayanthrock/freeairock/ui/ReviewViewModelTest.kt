@@ -5,7 +5,6 @@ import com.sayanthrock.freeairock.MainDispatcherRule
 import com.sayanthrock.freeairock.data.ai.CodeAnalysisState
 import com.sayanthrock.freeairock.data.github.GitHubApiService
 import com.sayanthrock.freeairock.data.storage.SecureStorageManager
-import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
@@ -24,18 +23,17 @@ class ReviewViewModelTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     private lateinit var viewModel: ReviewViewModel
-    private val secureStorage: SecureStorageManager = mockk(relaxed = true)
+    private val secureStorage = SecureStorageManager()
     private val apiService: GitHubApiService = mockk(relaxed = true)
 
     @Before
     fun setup() {
+        secureStorage.clearSecrets()
         viewModel = ReviewViewModel(secureStorage, apiService)
     }
 
     @Test
     fun `missing Gemini key updates state to Error`() = runTest {
-        every { secureStorage.getGeminiKey() } returns null
-
         viewModel.run("SayanthRock", "Root-apk", "12")
 
         assertTrue(viewModel.state.value is CodeAnalysisState.Error)
@@ -43,7 +41,7 @@ class ReviewViewModelTest {
 
     @Test
     fun `invalid pull request number updates state to Error`() = runTest {
-        every { secureStorage.getGeminiKey() } returns "fake-test-key"
+        secureStorage.saveGeminiKey("fake-test-key")
 
         viewModel.run("SayanthRock", "Root-apk", "not-a-number")
 
