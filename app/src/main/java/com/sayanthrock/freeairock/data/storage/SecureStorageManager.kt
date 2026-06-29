@@ -2,7 +2,7 @@ package com.sayanthrock.freeairock.data.storage
 
 import android.content.Context
 
-interface AppKeyStore {
+interface LocalSettingsStore {
     fun saveGitHubToken(token: String)
     fun getGitHubToken(): String?
     fun saveGeminiKey(key: String)
@@ -10,7 +10,7 @@ interface AppKeyStore {
     fun clearSecrets()
 }
 
-class SecureStorageManager(context: Context) : AppKeyStore {
+class SecureStorageManager(context: Context) : LocalSettingsStore {
     private val prefs = context.applicationContext.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
 
     override fun saveGitHubToken(token: String) {
