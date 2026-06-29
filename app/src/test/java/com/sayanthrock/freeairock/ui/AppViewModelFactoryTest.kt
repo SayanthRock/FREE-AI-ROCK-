@@ -2,7 +2,6 @@ package com.sayanthrock.freeairock.ui
 
 import com.sayanthrock.freeairock.data.github.GitHubApiService
 import com.sayanthrock.freeairock.data.storage.SecureStorageManager
-import io.mockk.every
 import io.mockk.mockk
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -10,13 +9,13 @@ import org.junit.Test
 
 class AppViewModelFactoryTest {
 
-    private val secureStorage: SecureStorageManager = mockk(relaxed = true)
+    private val secureStorage = SecureStorageManager()
     private val apiService: GitHubApiService = mockk(relaxed = true)
     private lateinit var factory: AppViewModelFactory
 
     @Before
     fun setup() {
-        every { secureStorage.getGeminiKey() } returns null
+        secureStorage.clearSecrets()
         factory = AppViewModelFactory(secureStorage, apiService)
     }
 
