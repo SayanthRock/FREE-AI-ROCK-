@@ -8,7 +8,7 @@ on:
 
 jobs:
   build:
-    name: Build and Sign Release
+    name: Build Release
     runs-on: ubuntu-latest
 
     permissions:
@@ -47,210 +47,14 @@ jobs:
           path: android-release-build.log
           if-no-files-found: warn
 
-      - name: Upload Unsigned Release Artifacts
+      - name: Upload Release Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: FREE-AI-ROCK-unsigned-release
+          name: FREE-AI-ROCK-release-artifacts
           path: |
             app/build/outputs/apk/release/*.apk
             app/build/outputs/bundle/release/*.aab
             app/build/outputs/mapping/release/mapping.txt
-          if-no-files-found: warn
-
-      - name: Install Android build tools for signing
-        run: |
-          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "build-tools;35.0.0"
-          ls "$ANDROID_HOME/build-tools/35.0.0"
-          echo "$ANDROID_HOME/build-tools/35.0.0" >> "$GITHUB_PATH"
-
-      - name: Prepare and validate release keystore
-        env:
-          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-        run: |
-          set -euo pipefail
-
-          fail() {
-            echo "::error::$1"
-            exit 1
-          }
-
-          require_secret() {
-            local name="$1"
-            local value="${!name:-}"
-            if [ -z "$value" ]; then
-              fail "$name secret is missing. Add it under Settings → Secrets and variables → Actions → Repository secrets."
-            fi
-          }
-
-          require_secret KEYSTORE_BASE64
-          require_secret KEY_ALIAS
-          require_secret STORE_PASSWORD
-          require_secret KEY_PASSWORD
-
-          if printf '%s' "$KEYSTORE_BASE64" | grep -q '\.\.\.'; then
-            fail "KEYSTORE_BASE64 contains placeholder dots (...). Paste the full Base64 text from release-keystore.jks."
-          fi
-
-          CLEAN_KEYSTORE_BASE64="$(printf '%s' "$KEYSTORE_BASE64" | sed -e 's/^[[:space:]]*KEYSTORE_BASE64[[:space:]]*[:=][[:space:]]*//' -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
-          CLEAN_KEYSTORE_BASE64="$(printf '%s' "$CLEAN_KEYSTORE_BASE64" | sed -e "s/^[\"']//" -e "s/[\"']$//")"
-
-          case "$CLEAN_KEYSTORE_BASE64" in
-            *,*) CLEAN_KEYSTORE_BASE64="${CLEAN_KEYSTORE_BASE64##*,}" ;;
-          esac
-
-          CLEAN_KEYSTORE_BASE64="$(printf '%s' "$CLEAN_KEYSTORE_BASE64" | tr -d '\r\n\t ')"
-
-          if [ ${#CLEAN_KEYSTORE_BASE64} -lt 100 ]; then
-            fail "KEYSTORE_BASE64 is too short. You probably pasted a filename, label, or incomplete value."
-          fi
-
-          if ! printf '%s' "$CLEAN_KEYSTORE_BASE64" | grep -Eq '^[A-Za-z0-9+/=]+$'; then
-            fail "KEYSTORE_BASE64 has invalid characters. Paste only raw Base64 text, with no prompts, labels, quotes, or extra words."
-          fi
-
-          case $(( ${#CLEAN_KEYSTORE_BASE64} % 4 )) in
-            0) ;;
-            2) CLEAN_KEYSTORE_BASE64="${CLEAN_KEYSTORE_BASE64}==" ;;
-            3) CLEAN_KEYSTORE_BASE64="${CLEAN_KEYSTORE_BASE64}=" ;;
-            *) fail "KEYSTORE_BASE64 length is invalid. Regenerate it with: base64 -w 0 release-keystore.jks" ;;
-          esac
-
-          if ! printf '%s' "$CLEAN_KEYSTORE_BASE64" | base64 --decode > release-keystore.jks; then
-            fail "KEYSTORE_BASE64 could not be decoded. Regenerate it from the actual release-keystore.jks file."
-          fi
-
-          if [ ! -s release-keystore.jks ]; then
-            fail "Decoded keystore file is empty."
-          fi
-
-          if ! keytool -list \
-            -keystore release-keystore.jks \
-            -storepass "$STORE_PASSWORD" > keystore-list.txt 2>&1; then
-            cat keystore-list.txt
-            fail "STORE_PASSWORD is wrong, or KEYSTORE_BASE64 was generated from a different keystore file."
-          fi
-
-          if keytool -list -v \
-            -keystore release-keystore.jks \
-            -storepass "$STORE_PASSWORD" \
-            -alias "$KEY_ALIAS" >/dev/null 2>&1; then
-            RESOLVED_KEY_ALIAS="$KEY_ALIAS"
-          else
-            mapfile -t AVAILABLE_ALIASES < <(grep -E '^Alias name:' keystore-list.txt | sed 's/^Alias name: //')
-
-            echo "Configured KEY_ALIAS did not match the keystore."
-            echo "Available alias count: ${#AVAILABLE_ALIASES[@]}"
-
-            if [ ${#AVAILABLE_ALIASES[@]} -eq 1 ]; then
-              RESOLVED_KEY_ALIAS="${AVAILABLE_ALIASES[0]}"
-              echo "Using the only alias found in the keystore: $RESOLVED_KEY_ALIAS"
-            elif [ ${#AVAILABLE_ALIASES[@]} -gt 1 ]; then
-              echo "Available aliases:"
-              printf '  - %s\n' "${AVAILABLE_ALIASES[@]}"
-              fail "KEY_ALIAS is wrong. Update the KEY_ALIAS repository secret to one of the aliases above."
-            else
-              cat keystore-list.txt
-              fail "No alias could be read from the keystore. Check the keystore file and STORE_PASSWORD."
-            fi
-          fi
-
-          {
-            echo "KEY_ALIAS_RESOLVED<<EOF"
-            printf '%s\n' "$RESOLVED_KEY_ALIAS"
-            echo "EOF"
-          } >> "$GITHUB_ENV"
-
-          echo "Release keystore decoded and alias validated"
-
-      - name: Sign APK
-        env:
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-        run: |
-          set -euo pipefail
-          shopt -s nullglob
-
-          mkdir -p signed/apk
-          apks=(app/build/outputs/apk/release/*.apk)
-
-          if [ ${#apks[@]} -eq 0 ]; then
-            echo "::error::No release APK found under app/build/outputs/apk/release"
-            exit 1
-          fi
-
-          for apk in "${apks[@]}"; do
-            name="$(basename "$apk" .apk)"
-            aligned="signed/apk/${name}-aligned.apk"
-            signed="signed/apk/${name}-signed.apk"
-
-            zipalign -f -p 4 "$apk" "$aligned"
-
-            apksigner sign \
-              --ks release-keystore.jks \
-              --ks-key-alias "${KEY_ALIAS_RESOLVED:-$KEY_ALIAS}" \
-              --ks-pass "pass:$STORE_PASSWORD" \
-              --key-pass "pass:$KEY_PASSWORD" \
-              --out "$signed" \
-              "$aligned"
-
-            apksigner verify --verbose "$signed"
-            rm -f "$aligned"
-            echo "Signed APK: $signed"
-          done
-
-      - name: Sign AAB
-        env:
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-        run: |
-          set -euo pipefail
-          shopt -s nullglob
-
-          mkdir -p signed/aab
-          bundles=(app/build/outputs/bundle/release/*.aab)
-
-          if [ ${#bundles[@]} -eq 0 ]; then
-            echo "::error::No release AAB found under app/build/outputs/bundle/release"
-            exit 1
-          fi
-
-          for aab in "${bundles[@]}"; do
-            name="$(basename "$aab" .aab)"
-            signed="signed/aab/${name}-signed.aab"
-
-            cp "$aab" "$signed"
-
-            jarsigner \
-              -keystore release-keystore.jks \
-              -storepass "$STORE_PASSWORD" \
-              -keypass "$KEY_PASSWORD" \
-              "$signed" \
-              "${KEY_ALIAS_RESOLVED:-$KEY_ALIAS}"
-
-            jarsigner -verify -verbose -certs "$signed" >/dev/null
-            echo "Signed AAB: $signed"
-          done
-
-      - name: Upload Signed Release Artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: FREE-AI-ROCK-signed-release
-          path: |
-            signed/apk/*.apk
-            signed/aab/*.aab
-            app/build/outputs/mapping/release/mapping.txt
-          if-no-files-found: error
-
-      - name: Upload R8 Mapping File
-        uses: actions/upload-artifact@v4
-        with:
-          name: FREE-AI-ROCK-r8-mapping
-          path: app/build/outputs/mapping/release/mapping.txt
           if-no-files-found: warn
 
       - name: Create GitHub Release
@@ -258,7 +62,8 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            signed/apk/*.apk
-            signed/aab/*.aab
+            app/build/outputs/apk/release/*.apk
+            app/build/outputs/bundle/release/*.aab
             app/build/outputs/mapping/release/mapping.txt
           generate_release_notes: true
+          fail_on_unmatched_files: false
