@@ -2,18 +2,23 @@ name: Android Release Build
 
 on:
   push:
+    branches: [ main ]
     tags:
       - 'v*'
   workflow_dispatch:
     inputs:
       release_tag:
         description: 'Release tag to create, for example v1.0.2'
-        required: true
-        default: 'v1.0.2'
+        required: false
+        default: ''
       release_name:
         description: 'Release title'
-        required: true
-        default: 'FREE-AI-ROCK v1.0.2'
+        required: false
+        default: ''
+
+concurrency:
+  group: android-release-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   build:
@@ -26,6 +31,8 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -42,17 +49,46 @@ jobs:
         id: release_meta
         run: |
           set -euo pipefail
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+
+          VERSION_NAME="$(grep -E 'versionName = "[^"]+"' app/build.gradle.kts | sed -E 's/.*versionName = "([^"]+)".*/\1/')"
+          if [ -z "$VERSION_NAME" ]; then
+            echo "::error::Could not read versionName from app/build.gradle.kts"
+            exit 1
+          fi
+
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ inputs.release_tag }}" ]; then
             TAG="${{ inputs.release_tag }}"
+          elif [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            TAG="${GITHUB_REF_NAME}"
+          else
+            TAG="v$VERSION_NAME"
+          fi
+
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ inputs.release_name }}" ]; then
             NAME="${{ inputs.release_name }}"
           else
-            TAG="${GITHUB_REF_NAME}"
-            NAME="FREE-AI-ROCK ${GITHUB_REF_NAME}"
+            NAME="FREE-AI-ROCK $TAG"
           fi
+
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           echo "name=$NAME" >> "$GITHUB_OUTPUT"
           echo "Release tag: $TAG"
           echo "Release name: $NAME"
+
+      - name: Ensure release tag exists
+        run: |
+          set -euo pipefail
+          TAG="${{ steps.release_meta.outputs.tag }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          if git ls-remote --exit-code --tags origin "$TAG" >/dev/null 2>&1; then
+            echo "Tag $TAG already exists."
+          else
+            git tag -a "$TAG" -m "Release $TAG" "${GITHUB_SHA}"
+            git push origin "$TAG"
+            echo "Created tag $TAG."
+          fi
 
       - name: Print Android SDK environment
         run: |
@@ -82,7 +118,7 @@ jobs:
             app/build/outputs/mapping/release/mapping.txt
           if-no-files-found: warn
 
-      - name: Create GitHub Release
+      - name: Create or Update GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.release_meta.outputs.tag }}
