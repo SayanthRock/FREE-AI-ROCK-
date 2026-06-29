@@ -1,0 +1,124 @@
+name: Version Update and Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_name:
+        description: 'New app version name, for example 1.0.2'
+        required: true
+        default: '1.0.2'
+      version_code:
+        description: 'New Android version code, must be higher than the previous value'
+        required: true
+        default: '3'
+      create_release_tag:
+        description: 'Create and push v<version_name> tag to trigger Android Release Build'
+        required: true
+        default: true
+        type: boolean
+
+permissions:
+  contents: write
+
+env:
+  VERSION_FILE: app/build.gradle.kts
+
+jobs:
+  version-release:
+    name: Update Version and Start Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Validate version inputs
+        run: |
+          set -euo pipefail
+
+          VERSION_NAME='${{ inputs.version_name }}'
+          VERSION_CODE='${{ inputs.version_code }}'
+
+          if ! printf '%s' "$VERSION_NAME" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+([-.][A-Za-z0-9]+)?$'; then
+            echo "::error::version_name must look like 1.0.2, 1.0.2-beta, or 1.0.2-rc1"
+            exit 1
+          fi
+
+          if ! printf '%s' "$VERSION_CODE" | grep -Eq '^[0-9]+$'; then
+            echo "::error::version_code must be a positive integer"
+            exit 1
+          fi
+
+          CURRENT_CODE="$(grep -E 'versionCode = [0-9]+' "$VERSION_FILE" | sed -E 's/.*versionCode = ([0-9]+).*/\1/')"
+          if [ "$VERSION_CODE" -le "$CURRENT_CODE" ]; then
+            echo "::error::version_code must be higher than current versionCode $CURRENT_CODE"
+            exit 1
+          fi
+
+      - name: Update Android version
+        run: |
+          set -euo pipefail
+
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          path = Path('app/build.gradle.kts')
+          text = path.read_text()
+          version_name = '${{ inputs.version_name }}'
+          version_code = '${{ inputs.version_code }}'
+
+          text = re.sub(r'versionCode = \d+', f'versionCode = {version_code}', text, count=1)
+          text = re.sub(r'versionName = "[^"]+"', f'versionName = "{version_name}"', text, count=1)
+          path.write_text(text)
+          PY
+
+          git diff -- "$VERSION_FILE"
+
+      - name: Commit version update
+        run: |
+          set -euo pipefail
+
+          VERSION_NAME='${{ inputs.version_name }}'
+
+          if git diff --quiet -- "$VERSION_FILE"; then
+            echo "No version changes detected."
+            exit 0
+          fi
+
+          git add "$VERSION_FILE"
+          git commit -m "chore: bump app version to $VERSION_NAME"
+          git push origin HEAD:${{ github.ref_name }}
+
+      - name: Create release tag
+        if: ${{ inputs.create_release_tag == true }}
+        run: |
+          set -euo pipefail
+
+          VERSION_NAME='${{ inputs.version_name }}'
+          TAG="v$VERSION_NAME"
+
+          git pull --ff-only origin ${{ github.ref_name }}
+
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "::error::Tag $TAG already exists locally. Choose a newer version."
+            exit 1
+          fi
+
+          if git ls-remote --exit-code --tags origin "$TAG" >/dev/null 2>&1; then
+            echo "::error::Tag $TAG already exists on origin. Choose a newer version."
+            exit 1
+          fi
+
+          git tag -a "$TAG" -m "Release $TAG"
+          git push origin "$TAG"
+
+          echo "Created $TAG. Android Release Build will run from the tag trigger."
