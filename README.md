@@ -9,6 +9,13 @@
 ![Platform](https://img.shields.io/badge/Platform-Android_10%2B-3DDC84?logo=android)
 ![Kotlin](https://img.shields.io/badge/Kotlin-Android-7F52FF?logo=kotlin)
 
+## 📌 Current App Version
+
+```text
+versionName: 1.0.1
+versionCode: 2
+```
+
 ## ✨ Core Capabilities
 
 - **Code AI:** Explore GitHub repositories, fetch raw code files, and generate approachable plain-English explanations of technical structures.
@@ -40,7 +47,7 @@ FREE-AI-ROCK prioritizes local security, lifecycle resilience, and production sa
 | Security | AndroidX Security Crypto, Android Keystore-backed encrypted preferences |
 | Storage | Android MediaStore, scoped storage |
 | Testing | JUnit 4, MockK, Coroutines Test, AndroidX Core Testing |
-| CI/CD | GitHub Actions debug build, unit tests, unsigned release verification, signed release, GitHub Releases |
+| CI/CD | GitHub Actions debug build, unit tests, version bump automation, unsigned release verification, signed release, GitHub Releases |
 
 ## 📱 App Sections
 
@@ -84,6 +91,25 @@ Test reports are uploaded as workflow artifacts for inspection.
 | `android-test.yml` | Runs JUnit/MockK unit tests |
 | `android-build.yml` | Builds debug APK and uploads artifact |
 | `android-release.yml` | Builds release APK/AAB, uploads unsigned artifacts, signs when secrets are configured, and creates tagged releases |
+| `version-release.yml` | Manually updates `versionName` / `versionCode`, commits the bump, and optionally creates a release tag |
+
+## 🤖 Version Update Automation
+
+Use this when preparing a new app update:
+
+```text
+Actions → Version Update and Release → Run workflow
+```
+
+Inputs:
+
+```text
+version_name: 1.0.2
+version_code: 3
+create_release_tag: true
+```
+
+When `create_release_tag` is enabled, the workflow creates `v<version_name>`. That tag automatically starts `android-release.yml`, which builds signed release artifacts and publishes a GitHub Release when signing secrets are valid.
 
 ## 🔐 Signed Release Setup
 
@@ -117,8 +143,8 @@ docs/ANDROID_RELEASE_SIGNING.md
 For production publishing, create and push a release tag:
 
 ```bash
-git tag v1.0.0
-git push origin v1.0.0
+git tag v1.0.1
+git push origin v1.0.1
 ```
 
 The release workflow will generate release APK/AAB outputs, sign them when the required secrets are available, and attach signed assets to GitHub Releases for tags matching `v*`.
@@ -140,7 +166,8 @@ FREE-AI-ROCK-/
 ├── .github/workflows/
 │   ├── android-build.yml
 │   ├── android-release.yml
-│   └── android-test.yml
+│   ├── android-test.yml
+│   └── version-release.yml
 ├── app/
 │   ├── build.gradle.kts
 │   ├── proguard-rules.pro
