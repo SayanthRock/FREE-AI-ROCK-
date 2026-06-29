@@ -2,35 +2,37 @@ package com.sayanthrock.freeairock.data.storage
 
 import android.content.Context
 
-interface LocalSettingsStore {
-    fun saveGitHubToken(token: String)
-    fun getGitHubToken(): String?
-    fun saveGeminiKey(key: String)
-    fun getGeminiKey(): String?
-    fun clearSecrets()
-}
+class SecureStorageManager(context: Context? = null) {
+    private val prefs = context?.applicationContext?.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
+    private val memory = mutableMapOf<String, String>()
 
-class SecureStorageManager(context: Context) : LocalSettingsStore {
-    private val prefs = context.applicationContext.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
-
-    override fun saveGitHubToken(token: String) {
-        prefs.edit().putString(KEY_GITHUB_TOKEN, token.trim()).apply()
+    fun saveGitHubToken(token: String) {
+        saveString(KEY_GITHUB_TOKEN, token.trim())
     }
 
-    override fun getGitHubToken(): String? {
-        return prefs.getString(KEY_GITHUB_TOKEN, null)?.takeIf { it.isNotBlank() }
+    fun getGitHubToken(): String? {
+        return readString(KEY_GITHUB_TOKEN)?.takeIf { it.isNotBlank() }
     }
 
-    override fun saveGeminiKey(key: String) {
-        prefs.edit().putString(KEY_GEMINI_KEY, key.trim()).apply()
+    fun saveGeminiKey(key: String) {
+        saveString(KEY_GEMINI_KEY, key.trim())
     }
 
-    override fun getGeminiKey(): String? {
-        return prefs.getString(KEY_GEMINI_KEY, null)?.takeIf { it.isNotBlank() }
+    fun getGeminiKey(): String? {
+        return readString(KEY_GEMINI_KEY)?.takeIf { it.isNotBlank() }
     }
 
-    override fun clearSecrets() {
-        prefs.edit().clear().apply()
+    fun clearSecrets() {
+        prefs?.edit()?.clear()?.apply()
+        memory.clear()
+    }
+
+    private fun saveString(name: String, value: String) {
+        prefs?.edit()?.putString(name, value)?.apply() ?: memory.set(name, value)
+    }
+
+    private fun readString(name: String): String? {
+        return prefs?.getString(name, null) ?: memory[name]
     }
 
     companion object {
