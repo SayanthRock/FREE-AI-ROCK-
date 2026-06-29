@@ -2,32 +2,35 @@ package com.sayanthrock.freeairock.data.storage
 
 import android.content.Context
 
-class SecureStorageManager(context: Context) {
+interface AppKeyStore {
+    fun saveGitHubToken(token: String)
+    fun getGitHubToken(): String?
+    fun saveGeminiKey(key: String)
+    fun getGeminiKey(): String?
+    fun clearSecrets()
+}
 
-    private val appContext = context.applicationContext
-    private val prefs = appContext.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
+class SecureStorageManager(context: Context) : AppKeyStore {
+    private val prefs = context.applicationContext.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
 
-    fun saveGitHubToken(token: String) {
+    override fun saveGitHubToken(token: String) {
         prefs.edit().putString(KEY_GITHUB_TOKEN, token.trim()).apply()
     }
 
-    fun getGitHubToken(): String? {
+    override fun getGitHubToken(): String? {
         return prefs.getString(KEY_GITHUB_TOKEN, null)?.takeIf { it.isNotBlank() }
     }
 
-    fun saveGeminiKey(key: String) {
+    override fun saveGeminiKey(key: String) {
         prefs.edit().putString(KEY_GEMINI_KEY, key.trim()).apply()
     }
 
-    fun getGeminiKey(): String? {
+    override fun getGeminiKey(): String? {
         return prefs.getString(KEY_GEMINI_KEY, null)?.takeIf { it.isNotBlank() }
     }
 
-    fun clearSecrets() {
-        prefs.edit()
-            .remove(KEY_GITHUB_TOKEN)
-            .remove(KEY_GEMINI_KEY)
-            .apply()
+    override fun clearSecrets() {
+        prefs.edit().clear().apply()
     }
 
     companion object {
