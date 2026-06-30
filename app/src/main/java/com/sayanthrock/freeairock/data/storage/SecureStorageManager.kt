@@ -6,8 +6,17 @@ import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 
 class SecureStorageManager(context: Context? = null) {
+    private val appContext = context?.applicationContext
     private val memory = mutableMapOf<String, String>()
-    private val prefs: SharedPreferences? = context?.applicationContext?.let(::createPreferences)
+    private val legacyPrefs: SharedPreferences? = appContext?.getSharedPreferences(
+        FALLBACK_PREF_NAME,
+        Context.MODE_PRIVATE
+    )
+    private val prefs: SharedPreferences? = appContext?.let(::createPreferences)
+
+    init {
+        migrateLegacySecrets()
+    }
 
     fun saveGitHubToken(token: String) {
         saveString(KEY_GITHUB_TOKEN, token.trim())
@@ -27,20 +36,40 @@ class SecureStorageManager(context: Context? = null) {
 
     fun clearSecrets() {
         prefs?.edit()?.clear()?.apply()
+        legacyPrefs?.edit()?.clear()?.apply()
         memory.clear()
     }
 
     private fun saveString(name: String, value: String) {
         if (value.isBlank()) {
-            prefs?.edit()?.remove(name)?.apply() ?: memory.remove(name)
+            prefs?.edit()?.remove(name)?.apply()
+            legacyPrefs?.edit()?.remove(name)?.apply()
+            memory.remove(name)
             return
         }
 
         prefs?.edit()?.putString(name, value)?.apply() ?: memory.set(name, value)
+        legacyPrefs?.edit()?.remove(name)?.apply()
     }
 
     private fun readString(name: String): String? {
-        return prefs?.getString(name, null) ?: memory[name]
+        return prefs?.getString(name, null)
+            ?: legacyPrefs?.getString(name, null)
+            ?: memory[name]
+    }
+
+    private fun migrateLegacySecrets() {
+        val securePrefs = prefs ?: return
+        val oldPrefs = legacyPrefs ?: return
+
+        listOf(KEY_GITHUB_TOKEN, KEY_GEMINI_KEY).forEach { key ->
+            val legacyValue = oldPrefs.getString(key, null)
+            if (!legacyValue.isNullOrBlank() && securePrefs.getString(key, null).isNullOrBlank()) {
+                securePrefs.edit().putString(key, legacyValue).apply()
+            }
+        }
+
+        oldPrefs.edit().clear().apply()
     }
 
     @Suppress("DEPRECATION")
