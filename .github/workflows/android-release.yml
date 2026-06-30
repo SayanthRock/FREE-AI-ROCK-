@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       release_tag:
-        description: 'Release tag to create, for example v1.0.2'
+        description: 'Release tag to create, for example v1.0.3'
         required: false
         default: ''
       release_name:
@@ -97,8 +97,58 @@ jobs:
           ls "$ANDROID_HOME/platforms" || true
           ls "$ANDROID_HOME/build-tools" || true
 
+      - name: Prepare optional release signing
+        id: signing
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${KEYSTORE_BASE64:-}" ] || [ -z "${KEY_ALIAS:-}" ] || [ -z "${STORE_PASSWORD:-}" ] || [ -z "${KEY_PASSWORD:-}" ]; then
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "Signing secrets are incomplete. Building unsigned release artifacts."
+            exit 0
+          fi
+
+          python3 scripts/decode_keystore_secret.py "$KEYSTORE_BASE64" release-keystore.jks
+
+          if ! keytool -list \
+            -keystore release-keystore.jks \
+            -storepass "$STORE_PASSWORD" \
+            -alias "$KEY_ALIAS" >/dev/null 2>&1; then
+            echo "::error::Release signing secrets are present but invalid. Run the Keystore Secret Check workflow for details."
+            exit 1
+          fi
+
+          echo "enabled=true" >> "$GITHUB_OUTPUT"
+          echo "Release signing is enabled."
+
       - name: Build Release Bundle and APK
-        run: bash -o pipefail -c 'gradle bundleRelease assembleRelease -Pandroid.useAndroidX=true -Pandroid.suppressUnsupportedCompileSdk=35 --no-daemon --warning-mode all --stacktrace 2>&1 | tee android-release-build.log'
+        env:
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+
+          SIGNING_ARGS=()
+          if [ "${{ steps.signing.outputs.enabled }}" = "true" ]; then
+            SIGNING_ARGS+=("-PFREE_AI_ROCK_STORE_FILE=$PWD/release-keystore.jks")
+            SIGNING_ARGS+=("-PFREE_AI_ROCK_STORE_PASSWORD=$STORE_PASSWORD")
+            SIGNING_ARGS+=("-PFREE_AI_ROCK_KEY_ALIAS=$KEY_ALIAS")
+            SIGNING_ARGS+=("-PFREE_AI_ROCK_KEY_PASSWORD=$KEY_PASSWORD")
+          fi
+
+          gradle bundleRelease assembleRelease \
+            -Pandroid.useAndroidX=true \
+            -Pandroid.suppressUnsupportedCompileSdk=35 \
+            --no-daemon \
+            --warning-mode all \
+            --stacktrace \
+            "${SIGNING_ARGS[@]}" 2>&1 | tee android-release-build.log
 
       - name: Upload Release Build Log
         if: always()
