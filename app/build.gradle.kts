@@ -7,12 +7,36 @@ android {
     namespace = "com.sayanthrock.freeairock"
     compileSdk = 35
 
+    signingConfigs {
+        create("release") {
+            val storeFilePath = providers.gradleProperty("FREE_AI_ROCK_STORE_FILE").orNull
+            val storePasswordValue = providers.gradleProperty("FREE_AI_ROCK_STORE_PASSWORD").orNull
+            val keyAliasValue = providers.gradleProperty("FREE_AI_ROCK_KEY_ALIAS").orNull
+            val keyPasswordValue = providers.gradleProperty("FREE_AI_ROCK_KEY_PASSWORD").orNull
+
+            if (!storeFilePath.isNullOrBlank() &&
+                !storePasswordValue.isNullOrBlank() &&
+                !keyAliasValue.isNullOrBlank() &&
+                !keyPasswordValue.isNullOrBlank()
+            ) {
+                storeFile = file(storeFilePath)
+                storePassword = storePasswordValue
+                keyAlias = keyAliasValue
+                keyPassword = keyPasswordValue
+                enableV1Signing = true
+                enableV2Signing = true
+                enableV3Signing = true
+                enableV4Signing = true
+            }
+        }
+    }
+
     defaultConfig {
         applicationId = "com.sayanthrock.freeairock"
         minSdk = 24
         targetSdk = 35
-        versionCode = 3
-        versionName = "1.0.2"
+        versionCode = 4
+        versionName = "1.0.3"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -23,6 +47,10 @@ android {
         }
         release {
             isMinifyEnabled = false
+            val releaseSigningConfig = signingConfigs.getByName("release")
+            if (releaseSigningConfig.storeFile != null) {
+                signingConfig = releaseSigningConfig
+            }
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
