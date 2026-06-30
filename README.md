@@ -1,39 +1,36 @@
 # FREE-AI-ROCK 🚀
 
-**FREE-AI-ROCK** is an advanced AI-powered developer toolkit built natively for Android. It bridges the GitHub API with Google's Gemini generative models to explore repositories, summarize complex pull requests, explain code, and prepare AI-assisted development workflows inside a strict, system-aware minimalist interface.
+**FREE-AI-ROCK** is an Android AI developer toolkit that connects GitHub file links and pull request diffs with Google's Gemini models. It can store keys locally, summarize source files, review pull request diffs, and ship release builds through GitHub Actions.
 
 [![Android Release Build](https://github.com/SayanthRock/FREE-AI-ROCK-/actions/workflows/android-release.yml/badge.svg)](https://github.com/SayanthRock/FREE-AI-ROCK-/actions/workflows/android-release.yml)
 ![Tests](https://img.shields.io/github/actions/workflow/status/SayanthRock/FREE-AI-ROCK-/android-test.yml?label=Tests)
 ![Debug Build](https://img.shields.io/github/actions/workflow/status/SayanthRock/FREE-AI-ROCK-/android-build.yml?label=Debug%20Build)
 ![Release](https://img.shields.io/github/v/release/SayanthRock/FREE-AI-ROCK-)
-![Platform](https://img.shields.io/badge/Platform-Android_10%2B-3DDC84?logo=android)
+![Platform](https://img.shields.io/badge/Platform-Android_7%2B-3DDC84?logo=android)
 ![Kotlin](https://img.shields.io/badge/Kotlin-Android-7F52FF?logo=kotlin)
 
 ## 📌 Current App Version
 
 ```text
-versionName: 1.0.1
-versionCode: 2
+versionName: 1.0.3
+versionCode: 4
 ```
 
 ## ✨ Core Capabilities
 
-- **Code AI:** Explore GitHub repositories, fetch raw code files, and generate approachable plain-English explanations of technical structures.
-- **PR Review:** Fetch raw Git diffs through the GitHub API and send them to Gemini 1.5 Flash for high-level summaries, risk notes, and testing guidance.
-- **Image Studio Foundation:** Keeps the Image Studio screen and bitmap state model stable while the production image renderer remains disabled for this build.
+- **Code AI:** Paste a GitHub raw URL or normal `github.com/.../blob/...` file URL and generate a plain-English code explanation.
+- **PR Review:** Fetch pull request diffs through the GitHub API and summarize purpose, risks, testing notes, and release notes.
+- **Image Studio Foundation:** Keeps bitmap state and gallery-save helpers ready while production image rendering remains disabled for this build.
 - **Settings & About:** Switch between System Auto, Light, and Dark modes while keeping the FREE-AI-ROCK charcoal/white identity.
-- **Secure Setup:** Store user-provided GitHub and Gemini keys locally using encrypted Android storage.
+- **Secure Setup:** Store user-provided GitHub and Gemini keys locally with encrypted preferences when available, with a safe local fallback.
 
 ## 🛡️ Architecture & Security
 
-FREE-AI-ROCK prioritizes local security, lifecycle resilience, and production safety.
-
 - **Zero hardcoded secrets:** API keys are not committed to version control.
-- **Encrypted local storage:** Uses AndroidX Security Crypto and encrypted preferences for local key storage.
-- **Lifecycle-safe ViewModels:** A unified `ViewModelProvider.Factory` keeps ViewModel state stable across rotation, theme changes, and Activity recreation.
+- **Encrypted local storage:** Uses AndroidX Security Crypto for app-side key storage.
+- **Lifecycle-safe ViewModels:** A unified `ViewModelProvider.Factory` keeps ViewModel state stable.
 - **Scoped storage:** Media output is written through Android `MediaStore` to `Pictures/FREE-AI-ROCK` without broad storage access.
-- **Release hardening:** ProGuard/R8 compatibility rules are included for Retrofit, Gson models, AndroidX Security Crypto, and the Google AI SDK.
-- **Release traceability:** The release workflow uploads build logs, unsigned artifacts, signed artifacts when signing secrets are configured, and `mapping.txt` when generated.
+- **Release signing support:** CI can decode and validate `KEYSTORE_BASE64`, sign release outputs when secrets are valid, or build unsigned artifacts when secrets are incomplete.
 
 ## 🛠️ Tech Stack
 
@@ -47,7 +44,7 @@ FREE-AI-ROCK prioritizes local security, lifecycle resilience, and production sa
 | Security | AndroidX Security Crypto, Android Keystore-backed encrypted preferences |
 | Storage | Android MediaStore, scoped storage |
 | Testing | JUnit 4, MockK, Coroutines Test, AndroidX Core Testing |
-| CI/CD | GitHub Actions debug build, unit tests, version bump automation, unsigned release verification, signed release, GitHub Releases |
+| CI/CD | GitHub Actions debug build, unit tests, version bump automation, keystore validation, release build, GitHub Releases |
 
 ## 📱 App Sections
 
@@ -63,8 +60,9 @@ Settings
 1. Download the latest APK from the [Releases](https://github.com/SayanthRock/FREE-AI-ROCK-/releases) page.
 2. Open FREE-AI-ROCK on your Android device.
 3. Enter your GitHub Personal Access Token and Gemini API key in the secure setup screen.
-4. Use **PR Review** to summarize pull request diffs.
-5. Use **Settings** to switch between System Auto, Light, and Dark UI modes.
+4. Open **Code AI**, paste a GitHub raw/blob file URL, and summarize the file.
+5. Open **PR Review**, enter owner, repo, and PR number, then summarize the diff.
+6. Use **Settings** to switch between System Auto, Light, and Dark UI modes.
 
 > Keep your API keys private. FREE-AI-ROCK stores them locally on your device and does not commit or upload them to this repository.
 
@@ -88,38 +86,34 @@ Test reports are uploaded as workflow artifacts for inspection.
 
 | Workflow | Purpose |
 |---|---|
-| `android-test.yml` | Runs JUnit/MockK unit tests |
+| `android-test.yml` | Runs unit tests |
 | `android-build.yml` | Builds debug APK and uploads artifact |
-| `android-release.yml` | Builds release APK/AAB, uploads unsigned artifacts, signs when secrets are configured, and creates tagged releases |
+| `android-unsigned-release.yml` | Builds unsigned release APK/AAB for verification |
+| `android-release.yml` | Builds release APK/AAB, signs when secrets are valid, and creates/updates GitHub Releases |
+| `keystore-check.yml` | Validates `KEYSTORE_BASE64`, passwords, and alias before release |
 | `version-release.yml` | Manually updates `versionName` / `versionCode`, commits the bump, and optionally creates a release tag |
 
 ## 🤖 Version Update Automation
 
-Use this when preparing a new app update:
+Use this when preparing the next app update:
 
 ```text
 Actions → Version Update and Release → Run workflow
 ```
 
-Inputs:
+Current default next-version inputs:
 
 ```text
-version_name: 1.0.2
-version_code: 3
+version_name: 1.0.4
+version_code: 5
 create_release_tag: true
 ```
 
-When `create_release_tag` is enabled, the workflow creates `v<version_name>`. That tag automatically starts `android-release.yml`, which builds signed release artifacts and publishes a GitHub Release when signing secrets are valid.
+When `create_release_tag` is enabled, the workflow creates `v<version_name>`. That tag starts `android-release.yml`, which builds release artifacts and signs them when signing secrets are valid.
 
 ## 🔐 Signed Release Setup
 
-The release workflow now verifies build health before signing by uploading this artifact:
-
-```text
-FREE-AI-ROCK-unsigned-release
-```
-
-Signed APK/AAB output still requires these Repository Secrets:
+Required Repository Secrets:
 
 ```text
 KEYSTORE_BASE64
@@ -138,16 +132,20 @@ Detailed setup and troubleshooting:
 
 ```text
 docs/ANDROID_RELEASE_SIGNING.md
+docs/KEYSTORE_BASE64_FIX.md
 ```
 
-For production publishing, create and push a release tag:
+Before release, run:
 
-```bash
-git tag v1.0.1
-git push origin v1.0.1
+```text
+Actions → Keystore Secret Check → Run workflow
 ```
 
-The release workflow will generate release APK/AAB outputs, sign them when the required secrets are available, and attach signed assets to GitHub Releases for tags matching `v*`.
+Expected success:
+
+```text
+KEYSTORE_BASE64 decoded successfully. Alias validated: freeairock
+```
 
 ## 🧯 Release Crash Debugging
 
@@ -167,16 +165,19 @@ FREE-AI-ROCK-/
 │   ├── android-build.yml
 │   ├── android-release.yml
 │   ├── android-test.yml
+│   ├── android-unsigned-release.yml
+│   ├── keystore-check.yml
 │   └── version-release.yml
 ├── app/
 │   ├── build.gradle.kts
 │   ├── proguard-rules.pro
 │   └── src/
 │       ├── main/java/com/sayanthrock/freeairock/
+│       ├── main/res/values/styles.xml
 │       └── test/java/com/sayanthrock/freeairock/
 ├── docs/
-│   ├── ANDROID_RELEASE_SIGNING.md
-│   └── RELEASE_CRASH_DEBUGGING.md
+├── scripts/
+│   └── decode_keystore_secret.py
 ├── build.gradle.kts
 ├── settings.gradle.kts
 └── README.md
