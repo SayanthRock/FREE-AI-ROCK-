@@ -36,9 +36,7 @@ class AppViewModel(
             _analysisState.value = CodeAnalysisState.Loading
 
             try {
-                val rawUrl = downloadUrl?.takeIf { it.isNotBlank() }
-                    ?: error("Raw file download URL missing")
-
+                val rawUrl = resolveDownloadUrl(downloadUrl)
                 val analyzer = aiAnalyzer ?: error("Gemini key missing. Add it in settings first.")
                 val rawCode = githubApiService.downloadRawFile(rawUrl).string()
                 val result = analyzer.analyzeCode(fileName, rawCode)
@@ -54,5 +52,22 @@ class AppViewModel(
 
     fun resetAnalysis() {
         _analysisState.value = CodeAnalysisState.Idle
+    }
+
+    private fun resolveDownloadUrl(input: String?): String {
+        val value = input?.trim()?.takeIf { it.isNotBlank() }
+            ?: error("GitHub file URL missing")
+
+        return when {
+            value.contains("raw.githubusercontent.com/") -> value
+            value.contains("github.com/") && value.contains("/blob/") -> {
+                value
+                    .substringBefore("?")
+                    .replace("https://github.com/", "https://raw.githubusercontent.com/")
+                    .replace("http://github.com/", "https://raw.githubusercontent.com/")
+                    .replace("/blob/", "/")
+            }
+            else -> value
+        }
     }
 }
