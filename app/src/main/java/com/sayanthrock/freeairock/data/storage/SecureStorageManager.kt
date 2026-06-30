@@ -36,20 +36,26 @@ class SecureStorageManager(context: Context? = null) {
 
     fun clearSecrets() {
         prefs?.edit()?.clear()?.apply()
-        legacyPrefs?.edit()?.clear()?.apply()
+        if (prefs !== legacyPrefs) {
+            legacyPrefs?.edit()?.clear()?.apply()
+        }
         memory.clear()
     }
 
     private fun saveString(name: String, value: String) {
         if (value.isBlank()) {
             prefs?.edit()?.remove(name)?.apply()
-            legacyPrefs?.edit()?.remove(name)?.apply()
+            if (prefs !== legacyPrefs) {
+                legacyPrefs?.edit()?.remove(name)?.apply()
+            }
             memory.remove(name)
             return
         }
 
         prefs?.edit()?.putString(name, value)?.apply() ?: memory.set(name, value)
-        legacyPrefs?.edit()?.remove(name)?.apply()
+        if (prefs !== legacyPrefs) {
+            legacyPrefs?.edit()?.remove(name)?.apply()
+        }
     }
 
     private fun readString(name: String): String? {
@@ -61,6 +67,10 @@ class SecureStorageManager(context: Context? = null) {
     private fun migrateLegacySecrets() {
         val securePrefs = prefs ?: return
         val oldPrefs = legacyPrefs ?: return
+
+        if (securePrefs === oldPrefs) {
+            return
+        }
 
         listOf(KEY_GITHUB_TOKEN, KEY_GEMINI_KEY).forEach { key ->
             val legacyValue = oldPrefs.getString(key, null)
