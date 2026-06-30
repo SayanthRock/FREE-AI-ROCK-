@@ -1,6 +1,6 @@
 # Android Release Signing Checklist
 
-This project builds release APK/AAB files with GitHub Actions. Signing and GitHub Release publishing require a private Android keystore stored through GitHub Actions Repository Secrets.
+This project builds release APK/AAB files with GitHub Actions. Signing requires a private Android keystore stored through GitHub Actions Repository Secrets.
 
 ## Current release pipeline
 
@@ -12,14 +12,13 @@ The release workflow is:
 
 It performs these stages:
 
-1. Build release APK and AAB.
-2. Upload unsigned release outputs as `FREE-AI-ROCK-unsigned-release`.
-3. Validate signing secrets and keystore alias.
-4. Sign APK and AAB.
-5. Upload signed outputs as `FREE-AI-ROCK-signed-release`.
-6. Publish a GitHub Release when the workflow is triggered by a `v*` tag.
+1. Resolve the release version and tag.
+2. Decode and validate signing secrets when all four signing secrets exist.
+3. Build release APK and AAB.
+4. Sign release outputs automatically when the secrets are valid.
+5. Upload release artifacts and publish/update the GitHub Release.
 
-If signing secrets are missing, the unsigned artifact can still confirm that the Android build itself is healthy.
+If signing secrets are missing, the workflow still builds unsigned release artifacts so the Android build can be verified. If signing secrets are present but wrong, the workflow fails early with a clear validation error, because silently shipping a broken signed release would be peak software comedy.
 
 ## Required GitHub Repository Secrets
 
@@ -49,7 +48,7 @@ keytool -genkeypair \
   -v \
   -keystore release-keystore.jks \
   -storetype PKCS12 \
-  -alias free-ai-rock \
+  -alias freeairock \
   -keyalg RSA \
   -keysize 2048 \
   -validity 10000
@@ -58,7 +57,7 @@ keytool -genkeypair \
 Recommended secret values for this generated keystore:
 
 ```text
-KEY_ALIAS=free-ai-rock
+KEY_ALIAS=freeairock
 STORE_PASSWORD=<the keystore password you entered>
 KEY_PASSWORD=<the key password you entered>
 ```
@@ -67,38 +66,61 @@ If you used the same password for both store and key, set `STORE_PASSWORD` and `
 
 ## Convert keystore to Base64
 
-Linux, macOS, or Git Bash:
+Linux, Termux, macOS, or Git Bash:
 
 ```bash
-base64 -w 0 release-keystore.jks > release-keystore.base64.txt
+base64 -w 0 release-keystore.jks > clean.txt
 ```
 
 Windows PowerShell:
 
 ```powershell
-[Convert]::ToBase64String([IO.File]::ReadAllBytes("release-keystore.jks")) | Set-Content -NoNewline release-keystore.base64.txt
+[Convert]::ToBase64String([IO.File]::ReadAllBytes("release-keystore.jks")) | Set-Content -NoNewline clean.txt
 ```
 
-Copy the full one-line content of `release-keystore.base64.txt` into the `KEYSTORE_BASE64` Repository Secret.
+Copy the full one-line content of `clean.txt` into the `KEYSTORE_BASE64` Repository Secret.
 
 ## Fix `base64: invalid input`
 
-This error means the `KEYSTORE_BASE64` secret is not clean Base64 text.
+This error means the `KEYSTORE_BASE64` secret is not clean Base64 text or GitHub still has an old corrupted value.
 
-Use Termux to regenerate and copy clean text:
+Use Termux to regenerate and verify clean text:
 
 ```bash
-base64 -w 0 release-keystore.jks > keystore-base64.txt
-base64 -d keystore-base64.txt > test-release-keystore.jks
+base64 -w 0 release-keystore.jks > clean.txt
+wc -c clean.txt
+base64 -d clean.txt > test.jks
+echo $?
 keytool -list -v \
-  -keystore test-release-keystore.jks \
+  -keystore test.jks \
   -storetype PKCS12 \
-  -storepass airock \
-  -alias free-ai-rock
-tr -d '\r\n\t ' < keystore-base64.txt | termux-clipboard-set
+  -alias freeairock
 ```
 
-Then update the existing GitHub repository secret named `KEYSTORE_BASE64` and paste only the copied Base64 text. Do not paste `KEYSTORE_BASE64 =`, terminal prompts, spaces, or the filename `keystore-base64.txt`.
+Then force replace the secret:
+
+```bash
+gh secret set KEYSTORE_BASE64 -R SayanthRock/FREE-AI-ROCK- < clean.txt
+gh secret set KEY_ALIAS -R SayanthRock/FREE-AI-ROCK- --body "freeairock"
+gh secret set STORE_PASSWORD -R SayanthRock/FREE-AI-ROCK- --body "$PASS"
+gh secret set KEY_PASSWORD -R SayanthRock/FREE-AI-ROCK- --body "$PASS"
+```
+
+Do not paste `KEYSTORE_BASE64 =`, terminal prompts, spaces, or the filename `clean.txt`.
+
+## Validate secrets before release
+
+Run this workflow after updating secrets:
+
+```text
+Actions → Keystore Secret Check → Run workflow → Branch: main
+```
+
+Expected success message:
+
+```text
+KEYSTORE_BASE64 decoded successfully. Alias validated: freeairock
+```
 
 ## Trigger a fresh release workflow run
 
@@ -113,30 +135,30 @@ Do not use the old failed run's `Re-run jobs` button when testing changed secret
 For production GitHub Release publishing:
 
 ```bash
-git tag v1.0.0
-git push origin v1.0.0
+git tag v1.0.3
+git push origin v1.0.3
 ```
 
-The release workflow publishes GitHub Releases only for tags matching `v*`.
+The release workflow publishes GitHub Releases for tags matching `v*` and can also create/update the version tag when manually dispatched.
 
 ## Expected success signals
 
-Unsigned build verification:
+Build artifact:
 
 ```text
-FREE-AI-ROCK-unsigned-release
+FREE-AI-ROCK-release-artifacts
 ```
 
 Signing validation:
 
 ```text
-Release keystore decoded and alias validated
+Release signing is enabled.
 ```
 
-Signed output:
+If secrets are incomplete:
 
 ```text
-FREE-AI-ROCK-signed-release
+Signing secrets are incomplete. Building unsigned release artifacts.
 ```
 
 ## Common failures
