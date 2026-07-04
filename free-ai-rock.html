@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FREE-AI-ROCK — GitHub × Gemini, on-device</title>
+<style>
+  :root{
+    --bg:#0A0A0A;
+    --bg2:#0F0F0F;
+    --glass: rgba(255,255,255,0.045);
+    --glass-border: rgba(255,255,255,0.08);
+    --indigo:#818CF8;
+    --violet:#7C3AED;
+    --deep:#4F46E5;
+    --text:#EDEDF2;
+    --muted:#8A8A96;
+    --mono: 'JetBrains Mono', 'SF Mono', monospace;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    background: radial-gradient(120% 100% at 50% -10%, #14121c 0%, var(--bg) 45%, var(--bg2) 100%);
+    color:var(--text);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    overflow-x:hidden;
+  }
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+  .grain{position:fixed;inset:0;pointer-events:none;opacity:0.025;z-index:2;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");}
+
+  nav{
+    position:fixed;top:0;left:0;right:0;z-index:50;
+    display:flex;align-items:center;justify-content:space-between;
+    padding:20px 6vw;
+    backdrop-filter:blur(20px);
+    background:rgba(10,10,10,0.55);
+    border-bottom:1px solid var(--glass-border);
+  }
+  .logo{font-weight:800;letter-spacing:-0.02em;font-size:15px;display:flex;align-items:center;gap:8px;}
+  .logo .dot{width:7px;height:7px;border-radius:50%;background:var(--indigo);box-shadow:0 0 12px var(--indigo);}
+  .navlinks{display:flex;gap:32px;font-size:13px;color:var(--muted);}
+  .navlinks a{color:var(--muted);text-decoration:none;transition:color .2s;}
+  .navlinks a:hover{color:var(--text);}
+
+  section{padding:0 6vw;}
+
+  .hero{
+    min-height:100svh;
+    display:flex;flex-direction:column;justify-content:center;
+    padding-top:100px;position:relative;
+  }
+  .eyebrow{
+    font-family:var(--mono);font-size:12px;color:var(--indigo);
+    letter-spacing:0.14em;text-transform:uppercase;margin-bottom:22px;
+    display:flex;align-items:center;gap:10px;
+  }
+  .eyebrow::before{content:'';width:18px;height:1px;background:var(--indigo);}
+  h1{
+    font-size:clamp(2.6rem, 6.5vw, 5.2rem);
+    font-weight:800;letter-spacing:-0.035em;line-height:0.98;
+    max-width:16ch;
+  }
+  h1 .grad{
+    background:linear-gradient(120deg,var(--indigo),var(--violet) 60%,var(--deep));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .sub{
+    margin-top:26px;max-width:52ch;font-size:17px;line-height:1.65;color:var(--muted);
+  }
+  .cta-row{display:flex;gap:14px;margin-top:40px;flex-wrap:wrap;}
+
+  .btn{
+    display:inline-flex;align-items:center;gap:10px;
+    padding:14px 24px;border-radius:14px;font-size:14.5px;font-weight:600;
+    text-decoration:none;cursor:pointer;border:1px solid transparent;
+    transition:transform .25s ease, box-shadow .25s ease, background .25s ease;
+  }
+  .btn:active{transform:scale(0.97);}
+  .btn-primary{
+    background:linear-gradient(135deg,var(--deep),var(--violet));
+    color:#fff;box-shadow:0 8px 30px -8px rgba(124,58,237,0.6);
+  }
+  .btn-primary:hover{box-shadow:0 12px 40px -6px rgba(124,58,237,0.8);transform:translateY(-2px);}
+  .btn-glass{
+    background:var(--glass);border:1px solid var(--glass-border);
+    color:var(--text);backdrop-filter:blur(20px);
+  }
+  .btn-glass:hover{background:rgba(255,255,255,0.08);transform:translateY(-2px);}
+  .btn svg{width:17px;height:17px;}
+
+  /* ---- signature: the link graphic ---- */
+  .link-vis{
+    margin-top:70px;position:relative;height:170px;
+    display:flex;align-items:center;justify-content:center;gap:0;
+    max-width:640px;
+  }
+  .node{
+    width:76px;height:76px;border-radius:22px;
+    background:var(--glass);border:1px solid var(--glass-border);
+    backdrop-filter:blur(24px);
+    display:flex;align-items:center;justify-content:center;
+    position:relative;z-index:2;flex-shrink:0;
+  }
+  .node svg{width:32px;height:32px;}
+  .node.gh svg{color:#e8e8ee;}
+  .node.rock{background:linear-gradient(135deg, rgba(129,140,248,0.12), rgba(124,58,237,0.12));}
+  .node.rock svg{color:var(--indigo);}
+  .wire{
+    flex:1;height:1px;position:relative;background:var(--glass-border);
+    margin:0 -2px;overflow:visible;
+  }
+  .wire::after{
+    content:'';position:absolute;top:50%;left:0;width:40%;height:2px;
+    transform:translateY(-50%);border-radius:2px;
+    background:linear-gradient(90deg, transparent, var(--indigo), transparent);
+    animation: travel 2.6s ease-in-out infinite;
+    box-shadow:0 0 12px var(--indigo);
+  }
+  @keyframes travel{
+    0%{left:-10%;opacity:0;}
+    15%{opacity:1;}
+    85%{opacity:1;}
+    100%{left:70%;opacity:0;}
+  }
+  .pulse-dot{
+    position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+    width:8px;height:8px;border-radius:50%;background:var(--violet);z-index:3;
+    box-shadow:0 0 20px var(--violet);
+  }
+
+  /* stats strip */
+  .strip{
+    display:grid;grid-template-columns:repeat(4,1fr);gap:1px;
+    background:var(--glass-border);border:1px solid var(--glass-border);
+    border-radius:16px;overflow:hidden;margin-top:100px;
+  }
+  .strip .cell{background:var(--bg2);padding:26px 22px;}
+  .strip .num{font-family:var(--mono);font-size:26px;font-weight:600;color:var(--indigo);}
+  .strip .lbl{font-size:12.5px;color:var(--muted);margin-top:6px;}
+
+  /* connect section */
+  .connect{
+    padding:140px 6vw;position:relative;
+  }
+  .section-head{max-width:640px;margin-bottom:64px;}
+  .section-tag{font-family:var(--mono);font-size:12px;color:var(--muted);letter-spacing:0.1em;text-transform:uppercase;}
+  .section-head h2{font-size:clamp(1.8rem,3.6vw,2.6rem);font-weight:800;letter-spacing:-0.02em;margin-top:14px;}
+  .section-head p{color:var(--muted);margin-top:16px;font-size:15.5px;line-height:1.6;}
+
+  .flow{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;}
+  @media (max-width:860px){.flow{grid-template-columns:1fr;}}
+  .step{
+    background:var(--glass);border:1px solid var(--glass-border);
+    border-radius:18px;padding:28px 26px;backdrop-filter:blur(20px);
+    position:relative;transition:border-color .25s, transform .25s;
+  }
+  .step:hover{border-color:rgba(129,140,248,0.35);transform:translateY(-4px);}
+  .step .idx{font-family:var(--mono);font-size:12px;color:var(--indigo);margin-bottom:16px;display:block;}
+  .step h3{font-size:16.5px;font-weight:700;margin-bottom:10px;}
+  .step p{font-size:14px;color:var(--muted);line-height:1.6;}
+
+  /* apk card */
+  .apk-card{
+    margin-top:80px;border-radius:24px;
+    background:linear-gradient(135deg, rgba(129,140,248,0.06), rgba(124,58,237,0.04));
+    border:1px solid var(--glass-border);
+    padding:48px;display:flex;align-items:center;justify-content:space-between;gap:40px;
+    backdrop-filter:blur(24px);
+  }
+  @media (max-width:760px){.apk-card{flex-direction:column;align-items:flex-start;padding:32px;}}
+  .apk-left h3{font-size:22px;font-weight:800;margin-bottom:10px;}
+  .apk-left p{color:var(--muted);font-size:14.5px;max-width:44ch;line-height:1.6;}
+  .apk-meta{display:flex;gap:22px;margin-top:20px;font-family:var(--mono);font-size:12px;color:var(--muted);}
+  .apk-meta span b{color:var(--indigo);}
+
+  footer{
+    padding:50px 6vw 60px;border-top:1px solid var(--glass-border);
+    display:flex;justify-content:space-between;align-items:center;
+    color:var(--muted);font-size:13px;flex-wrap:wrap;gap:16px;
+  }
+  footer a{color:var(--muted);}
+
+  @media (prefers-reduced-motion: reduce){
+    .wire::after{animation:none;}
+  }
+</style>
+</head>
+<body>
+<div class="grain"></div>
+
+<nav>
+  <div class="logo"><span class="dot"></span> FREE-AI-ROCK</div>
+  <div class="navlinks">
+    <a href="#connect">Connect</a>
+    <a href="#download">Download</a>
+    <a href="#footer">sayanthrock</a>
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="eyebrow">Rock ecosystem · Android</div>
+  <h1>Your repos, <span class="grad">reasoned</span><br>on your phone.</h1>
+  <p class="sub">FREE-AI-ROCK links your GitHub account straight into a native Gemini-powered workspace — browse repos, analyze code, and generate on-device, without leaving your pocket.</p>
+
+  <div class="cta-row">
+    <a class="btn btn-primary" href="#connect">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.484 2 12.021c0 4.428 2.865 8.184 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.455-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.221-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.269 2.75 1.026A9.564 9.564 0 0 1 12 6.844c.85.004 1.705.115 2.504.337 1.909-1.295 2.747-1.026 2.747-1.026.546 1.378.203 2.397.1 2.65.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .268.18.58.688.482A10.02 10.02 0 0 0 22 12.02C22 6.484 17.522 2 12 2Z"/></svg>
+      Connect GitHub
+    </a>
+    <a class="btn btn-glass" href="#download">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v13m0 0-4-4m4 4 4-4M4 20h16"/></svg>
+      Download APK
+    </a>
+  </div>
+
+  <div class="link-vis">
+    <div class="node gh">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.484 2 12.021c0 4.428 2.865 8.184 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.455-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.221-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.269 2.75 1.026A9.564 9.564 0 0 1 12 6.844c.85.004 1.705.115 2.504.337 1.909-1.295 2.747-1.026 2.747-1.026.546 1.378.203 2.397.1 2.65.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .268.18.58.688.482A10.02 10.02 0 0 0 22 12.02C22 6.484 17.522 2 12 2Z"/></svg>
+    </div>
+    <div class="wire"></div>
+    <div class="pulse-dot"></div>
+    <div class="wire"></div>
+    <div class="node rock">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2 2 7l10 5 10-5-10-5Z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+    </div>
+  </div>
+
+  <div class="strip">
+    <div class="cell"><div class="num">01</div><div class="lbl">GitHub API integration</div></div>
+    <div class="cell"><div class="num">02</div><div class="lbl">Gemini code analyzer</div></div>
+    <div class="cell"><div class="num">03</div><div class="lbl">On-device image studio</div></div>
+    <div class="cell"><div class="num">Kt</div><div class="lbl">Kotlin + Jetpack Compose</div></div>
+  </div>
+</section>
+
+<section class="connect" id="connect">
+  <div class="section-head">
+    <div class="section-tag">Connect</div>
+    <h2>Three steps from repo to result.</h2>
+    <p>Authenticate once. Everything after runs natively — no browser hand-off, no re-login per session.</p>
+  </div>
+  <div class="flow">
+    <div class="step">
+      <span class="idx">01</span>
+      <h3>Authorize</h3>
+      <p>Sign in with GitHub OAuth. FREE-AI-ROCK requests read access to your repos and nothing beyond what the Code Analyzer needs.</p>
+    </div>
+    <div class="step">
+      <span class="idx">02</span>
+      <h3>Pick a repo</h3>
+      <p>Browse your repositories natively inside the app. Select one to pull into the Code Analyzer tab for review.</p>
+    </div>
+    <div class="step">
+      <span class="idx">03</span>
+      <h3>Generate</h3>
+      <p>Gemini reasons over the code in context and the Image Studio renders alongside it — one connected workspace, not two disconnected tabs.</p>
+    </div>
+  </div>
+
+  <div class="apk-card" id="download">
+    <div class="apk-left">
+      <h3>FREE-AI-ROCK.apk</h3>
+      <p>Signed release build. Sideload directly or build from source via the Rock ecosystem repo.</p>
+      <div class="apk-meta">
+        <span>Min SDK <b>26</b></span>
+        <span>Arch <b>arm64-v8a</b></span>
+        <span>Size <b>~24MB</b></span>
+      </div>
+    </div>
+    <a class="btn btn-primary" href="#">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v13m0 0-4-4m4 4 4-4M4 20h16"/></svg>
+      Get the APK
+    </a>
+  </div>
+</section>
+
+<footer id="footer">
+  <div>© 2026 SayanthRock — Rock ecosystem</div>
+  <div><a href="#">github.com/sayanthrock</a></div>
+</footer>
+
+</body>
+</html>
