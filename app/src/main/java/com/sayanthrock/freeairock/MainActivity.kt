@@ -28,7 +28,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModelProvider
 import com.sayanthrock.freeairock.data.ai.CodeAnalysisState
@@ -157,6 +159,17 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+fun extractFileNameFromUrl(url: String): String? {
+    val cleanUrl = url.substringBefore('?').substringBefore('#').trimEnd('/')
+    if (cleanUrl.contains('/')) {
+        val lastSegment = cleanUrl.substringAfterLast('/')
+        if (lastSegment.isNotBlank() && lastSegment.contains('.')) {
+            return lastSegment
+        }
+    }
+    return null
+}
+
 @Composable
 private fun CodeAnalyzerScreen(
     uiState: CodeAnalysisState,
@@ -166,6 +179,7 @@ private fun CodeAnalyzerScreen(
     modifier: Modifier = Modifier
 ) {
     var githubToken by remember { mutableStateOf("") }
+    var isTokenVisible by remember { mutableStateOf(false) }
 
     var fileName by remember { mutableStateOf("MainActivity.kt") }
     var fileUrl by remember { mutableStateOf("") }
@@ -201,7 +215,18 @@ private fun CodeAnalyzerScreen(
                 value = githubToken,
                 onValueChange = { githubToken = it },
                 label = { Text("GitHub token") },
-                visualTransformation = PasswordVisualTransformation(),
+                visualTransformation = if (isTokenVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                trailingIcon = {
+                    androidx.compose.material3.TextButton(
+                        onClick = { isTokenVisible = !isTokenVisible }
+                    ) {
+                        Text(
+                            text = if (isTokenVisible) "Hide" else "Show",
+                            fontFamily = FontFamily.Monospace,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true
             )
@@ -250,7 +275,12 @@ private fun CodeAnalyzerScreen(
 
             OutlinedTextField(
                 value = fileUrl,
-                onValueChange = { fileUrl = it },
+                onValueChange = { url ->
+                    fileUrl = url
+                    extractFileNameFromUrl(url)?.let {
+                        fileName = it
+                    }
+                },
                 label = { Text("GitHub raw/blob file URL") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true

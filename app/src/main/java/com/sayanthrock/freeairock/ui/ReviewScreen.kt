@@ -85,9 +85,18 @@ fun ReviewScreen(
 
         OutlinedTextField(
             value = prNumberText,
-            onValueChange = { prNumberText = it },
-            label = { Text("Pull Request #") },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            onValueChange = { input ->
+                val parsed = parseGitHubPrUrl(input)
+                if (parsed != null) {
+                    ownerText = parsed.first
+                    repoText = parsed.second
+                    prNumberText = parsed.third
+                } else {
+                    prNumberText = input
+                }
+            },
+            label = { Text("Pull Request # or full URL") },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
             modifier = Modifier.fillMaxWidth(),
             singleLine = true
         )
@@ -154,4 +163,12 @@ fun ReviewScreen(
             CodeAnalysisState.Idle -> Unit
         }
     }
+}
+
+fun parseGitHubPrUrl(url: String): Triple<String, String, String>? {
+    val cleanUrl = url.substringBefore('?').substringBefore('#').trim().trimEnd('/')
+    val regex = """^(?:https?://)?(?:www\.)?github\.com/([^/]+)/([^/]+)/pull/(\d+)(?:/.*)?$""".toRegex(RegexOption.IGNORE_CASE)
+    val matchResult = regex.matchEntire(cleanUrl) ?: return null
+    val (owner, repo, prNumber) = matchResult.destructured
+    return Triple(owner, repo, prNumber)
 }
