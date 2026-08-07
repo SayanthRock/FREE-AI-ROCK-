@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.sayanthrock.freeairock.data.ai.AiCodeAnalyzer
 import com.sayanthrock.freeairock.data.ai.CodeAnalysisState
 import com.sayanthrock.freeairock.data.github.GitHubApiService
+import com.sayanthrock.freeairock.data.ai.PollinationsApiService
 import com.sayanthrock.freeairock.data.storage.SecureStorageManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -13,21 +14,21 @@ import kotlinx.coroutines.launch
 
 class AppViewModel(
     private val secureStorage: SecureStorageManager,
-    private val githubApiService: GitHubApiService
+    private val githubApiService: GitHubApiService,
+    private val pollinationsApiService: PollinationsApiService
 ) : ViewModel() {
 
     private val _analysisState = MutableStateFlow<CodeAnalysisState>(CodeAnalysisState.Idle)
     val analysisState: StateFlow<CodeAnalysisState> = _analysisState.asStateFlow()
 
-    private var aiAnalyzer: AiCodeAnalyzer? = secureStorage.getGeminiKey()?.let(::AiCodeAnalyzer)
+    private var aiAnalyzer: AiCodeAnalyzer? = AiCodeAnalyzer(pollinationsApiService)
 
     fun refreshAiAnalyzer() {
-        aiAnalyzer = secureStorage.getGeminiKey()?.let(::AiCodeAnalyzer)
+        aiAnalyzer = AiCodeAnalyzer(pollinationsApiService)
     }
 
-    fun saveKeys(githubToken: String, geminiKey: String) {
+    fun saveKeys(githubToken: String) {
         secureStorage.saveGitHubToken(githubToken)
-        secureStorage.saveGeminiKey(geminiKey)
         refreshAiAnalyzer()
     }
 
@@ -37,7 +38,7 @@ class AppViewModel(
 
             try {
                 val rawUrl = resolveDownloadUrl(downloadUrl)
-                val analyzer = aiAnalyzer ?: error("Gemini key missing. Add it in settings first.")
+                val analyzer = aiAnalyzer ?: error("AI Analyzer not initialized")
                 val rawCode = githubApiService.downloadRawFile(rawUrl).string()
                 val result = analyzer.analyzeCode(fileName, rawCode)
 

@@ -1,6 +1,7 @@
 package com.sayanthrock.freeairock.ui
 
 import com.sayanthrock.freeairock.data.github.GitHubApiService
+import com.sayanthrock.freeairock.data.ai.PollinationsApiService
 import com.sayanthrock.freeairock.data.github.GitHubContentItem
 import com.sayanthrock.freeairock.data.github.GitHubRepo
 import com.sayanthrock.freeairock.data.storage.SecureStorageManager
@@ -9,6 +10,7 @@ import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import io.mockk.mockk
 
 class AppViewModelFactoryTest {
 
@@ -19,7 +21,7 @@ class AppViewModelFactoryTest {
     @Before
     fun setup() {
         secureStorage.clearSecrets()
-        factory = AppViewModelFactory(secureStorage, apiService)
+        factory = AppViewModelFactory(secureStorage, apiService, mockk<PollinationsApiService>())
     }
 
     @Test

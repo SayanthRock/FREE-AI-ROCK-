@@ -26,14 +26,6 @@ class SecureStorageManager(context: Context? = null) {
         return readString(KEY_GITHUB_TOKEN)?.takeIf { it.isNotBlank() }
     }
 
-    fun saveGeminiKey(key: String) {
-        saveString(KEY_GEMINI_KEY, key.trim())
-    }
-
-    fun getGeminiKey(): String? {
-        return readString(KEY_GEMINI_KEY)?.takeIf { it.isNotBlank() }
-    }
-
     fun clearSecrets() {
         prefs?.edit()?.clear()?.apply()
         if (prefs !== legacyPrefs) {
@@ -72,7 +64,7 @@ class SecureStorageManager(context: Context? = null) {
             return
         }
 
-        listOf(KEY_GITHUB_TOKEN, KEY_GEMINI_KEY).forEach { key ->
+        listOf(KEY_GITHUB_TOKEN).forEach { key ->
             val legacyValue = oldPrefs.getString(key, null)
             if (!legacyValue.isNullOrBlank() && securePrefs.getString(key, null).isNullOrBlank()) {
                 securePrefs.edit().putString(key, legacyValue).apply()
@@ -105,6 +97,5 @@ class SecureStorageManager(context: Context? = null) {
         private const val PREF_NAME = "free_ai_rock_secure_prefs"
         private const val FALLBACK_PREF_NAME = "free_ai_rock_prefs"
         private const val KEY_GITHUB_TOKEN = "github_token"
-        private const val KEY_GEMINI_KEY = "gemini_key"
     }
 }
