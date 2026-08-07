@@ -15,7 +15,7 @@ class ImageViewModel(
     val uiState: StateFlow<BitmapImageState> = _uiState.asStateFlow()
 
     fun refreshRenderer() {
-        secureStorage.getGeminiKey()
+        // secureStorage.getGeminiKey()
     }
 
     fun create(prompt: String) {

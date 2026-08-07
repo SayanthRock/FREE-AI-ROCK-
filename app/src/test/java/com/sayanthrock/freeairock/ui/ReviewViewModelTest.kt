@@ -4,6 +4,8 @@ import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import com.sayanthrock.freeairock.MainDispatcherRule
 import com.sayanthrock.freeairock.data.ai.CodeAnalysisState
 import com.sayanthrock.freeairock.data.github.GitHubApiService
+import com.sayanthrock.freeairock.data.ai.PollinationsApiService
+import com.sayanthrock.freeairock.data.ai.PollinationsRequest
 import com.sayanthrock.freeairock.data.github.GitHubContentItem
 import com.sayanthrock.freeairock.data.github.GitHubRepo
 import com.sayanthrock.freeairock.data.storage.SecureStorageManager
@@ -15,6 +17,9 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import io.mockk.mockk
+import io.mockk.coEvery
+import io.mockk.every
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ReviewViewModelTest {
@@ -25,14 +30,17 @@ class ReviewViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
+    private lateinit var secureStorage: SecureStorageManager
+    private lateinit var githubApiService: GitHubApiService
+    private lateinit var pollinationsApiService: PollinationsApiService
     private lateinit var viewModel: ReviewViewModel
-    private val secureStorage = SecureStorageManager()
-    private val apiService = FakeGitHubApiService()
 
     @Before
     fun setup() {
-        secureStorage.clearSecrets()
-        viewModel = ReviewViewModel(secureStorage, apiService)
+        secureStorage = SecureStorageManager()
+        githubApiService = mockk()
+        pollinationsApiService = mockk()
+        viewModel = ReviewViewModel(secureStorage, githubApiService, pollinationsApiService)
     }
 
     @Test
@@ -43,7 +51,7 @@ class ReviewViewModelTest {
 
     @Test
     fun `invalid pull request number updates state to Error`() = runTest {
-        secureStorage.saveGeminiKey("test-key")
+
         viewModel.run("owner", "repo", "not-a-number")
         assertTrue(viewModel.state.value is CodeAnalysisState.Error)
     }

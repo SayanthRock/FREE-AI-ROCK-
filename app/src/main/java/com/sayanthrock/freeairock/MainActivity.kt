@@ -40,6 +40,9 @@ import com.sayanthrock.freeairock.ui.AppViewModelFactory
 import com.sayanthrock.freeairock.ui.HomeScaffold
 import com.sayanthrock.freeairock.ui.ImageViewModel
 import com.sayanthrock.freeairock.ui.PlaceholderPanel
+import com.sayanthrock.freeairock.ui.ImageStudioScreen
+import com.sayanthrock.freeairock.data.ai.PollinationsApiService
+import retrofit2.converter.scalars.ScalarsConverterFactory
 import com.sayanthrock.freeairock.ui.ReviewScreen
 import com.sayanthrock.freeairock.ui.ReviewViewModel
 import com.sayanthrock.freeairock.ui.ThemeMode
@@ -76,8 +79,19 @@ class MainActivity : ComponentActivity() {
             .create(GitHubApiService::class.java)
     }
 
+
+    private val pollinationsApiService by lazy {
+        Retrofit.Builder()
+            .baseUrl("https://text.pollinations.ai/")
+            .client(OkHttpClient.Builder().build())
+            .addConverterFactory(ScalarsConverterFactory.create())
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(PollinationsApiService::class.java)
+    }
+
     private val viewModelFactory by lazy {
-        AppViewModelFactory(secureStorage, githubApiService)
+        AppViewModelFactory(secureStorage, githubApiService, pollinationsApiService)
     }
 
     private val viewModelProvider by lazy {
@@ -112,8 +126,8 @@ class MainActivity : ComponentActivity() {
                     codeContent = { modifier ->
                         CodeAnalyzerScreen(
                             uiState = appViewModel.analysisState.collectAsState().value,
-                            onSave = { githubToken, geminiKey ->
-                                appViewModel.saveKeys(githubToken, geminiKey)
+                            onSave = { githubToken ->
+                                appViewModel.saveKeys(githubToken)
                                 imageViewModel.refreshRenderer()
                             },
                             onAnalyze = appViewModel::analyzeCodeFile,
@@ -128,11 +142,7 @@ class MainActivity : ComponentActivity() {
                         )
                     },
                     studioContent = { modifier ->
-                        PlaceholderPanel(
-                            title = "Image Studio",
-                            body = "Image renderer, bitmap state, and gallery save helper are ready. Full creation UI will connect here next.",
-                            modifier = modifier
-                        )
+                        ImageStudioScreen(modifier = modifier)
                     },
                     aboutContent = { modifier ->
                         AboutScreen(
@@ -150,13 +160,13 @@ class MainActivity : ComponentActivity() {
 @Composable
 private fun CodeAnalyzerScreen(
     uiState: CodeAnalysisState,
-    onSave: (githubToken: String, geminiKey: String) -> Unit,
+    onSave: (githubToken: String) -> Unit,
     onAnalyze: (fileName: String, downloadUrl: String?) -> Unit,
     onReset: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     var githubToken by remember { mutableStateOf("") }
-    var geminiKey by remember { mutableStateOf("") }
+
     var fileName by remember { mutableStateOf("MainActivity.kt") }
     var fileUrl by remember { mutableStateOf("") }
     var savedMessage by remember { mutableStateOf<String?>(null) }
@@ -196,22 +206,13 @@ private fun CodeAnalyzerScreen(
                 singleLine = true
             )
 
-            Spacer(modifier = Modifier.height(12.dp))
 
-            OutlinedTextField(
-                value = geminiKey,
-                onValueChange = { geminiKey = it },
-                label = { Text("Gemini key") },
-                visualTransformation = PasswordVisualTransformation(),
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true
-            )
 
             Spacer(modifier = Modifier.height(16.dp))
 
             Button(
                 onClick = {
-                    onSave(githubToken, geminiKey)
+                    onSave(githubToken)
                     savedMessage = "Saved securely on this device"
                 },
                 modifier = Modifier.fillMaxWidth()

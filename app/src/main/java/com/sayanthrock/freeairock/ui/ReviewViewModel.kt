@@ -6,6 +6,7 @@ import com.sayanthrock.freeairock.data.ai.AiCodeAnalyzer
 import com.sayanthrock.freeairock.data.ai.CodeAnalysisState
 import com.sayanthrock.freeairock.data.github.GitHubApiService
 import com.sayanthrock.freeairock.data.storage.SecureStorageManager
+import com.sayanthrock.freeairock.data.ai.PollinationsApiService
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -13,23 +14,22 @@ import kotlinx.coroutines.launch
 
 class ReviewViewModel(
     private val storage: SecureStorageManager,
-    private val service: GitHubApiService
+    private val service: GitHubApiService,
+    private val pollinationsApiService: PollinationsApiService
 ) : ViewModel() {
 
     private val _state = MutableStateFlow<CodeAnalysisState>(CodeAnalysisState.Idle)
     val state: StateFlow<CodeAnalysisState> = _state.asStateFlow()
 
-    private var cachedGeminiKey: String? = null
     private var cachedAnalyzer: AiCodeAnalyzer? = null
 
     fun run(owner: String, repo: String, numberText: String) {
         viewModelScope.launch {
             _state.value = CodeAnalysisState.Loading
             try {
-                val token = storage.getGeminiKey() ?: error("Gemini key missing")
                 val number = numberText.trim().toIntOrNull() ?: error("Invalid number")
                 val diffText = service.getPullRequestDiff(owner.trim(), repo.trim(), number).string()
-                val result = getAnalyzer(token).summarizePullRequest(owner.trim(), repo.trim(), number, diffText)
+                val result = getAnalyzer().summarizePullRequest(owner.trim(), repo.trim(), number, diffText)
                 _state.value = CodeAnalysisState.Success(result)
             } catch (error: Exception) {
                 _state.value = CodeAnalysisState.Error(error.localizedMessage ?: "Review failed")
@@ -37,12 +37,10 @@ class ReviewViewModel(
         }
     }
 
-    private fun getAnalyzer(geminiKey: String): AiCodeAnalyzer {
-        if (cachedAnalyzer == null || cachedGeminiKey != geminiKey) {
-            cachedGeminiKey = geminiKey
-            cachedAnalyzer = AiCodeAnalyzer(geminiKey)
+    private fun getAnalyzer(): AiCodeAnalyzer {
+        if (cachedAnalyzer == null) {
+            cachedAnalyzer = AiCodeAnalyzer(pollinationsApiService)
         }
-
         return cachedAnalyzer ?: error("AI analyzer unavailable")
     }
 }

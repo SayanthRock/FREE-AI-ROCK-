@@ -1,14 +1,6 @@
 package com.sayanthrock.freeairock.data.ai
 
-import com.google.ai.client.generativeai.GenerativeModel
-import com.google.ai.client.generativeai.type.content
-
-class AiCodeAnalyzer(apiKey: String) {
-
-    private val model = GenerativeModel(
-        modelName = "gemini-1.5-flash",
-        apiKey = apiKey
-    )
+class AiCodeAnalyzer(private val pollinationsApiService: PollinationsApiService) {
 
     suspend fun analyzeCode(fileName: String, rawCode: String): String {
         val safeFileName = fileName.ifBlank { "selected-file" }
@@ -71,10 +63,12 @@ class AiCodeAnalyzer(apiKey: String) {
 
     private suspend fun generateText(prompt: String, fallback: String): String {
         return try {
-            val response = model.generateContent(
-                content { text(prompt) }
+            val response = pollinationsApiService.generateText(
+                PollinationsRequest(
+                    messages = listOf(PollinationsMessage(role = "user", content = prompt))
+                )
             )
-            response.text ?: fallback
+            response.takeIf { it.isNotBlank() } ?: fallback
         } catch (error: Exception) {
             "AI analysis failed: ${error.localizedMessage ?: "Unknown error"}"
         }
