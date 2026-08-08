@@ -1,0 +1,81 @@
+package com.sayanthrock.freeairock.data.ai
+
+class AiCodeAnalyzer(private val pollinationsApiService: PollinationsApiService) {
+
+    suspend fun analyzeCode(fileName: String, rawCode: String): String {
+        val safeFileName = fileName.ifBlank { "selected-file" }
+        val prompt = buildString {
+            appendLine("You are an expert software developer.")
+            appendLine("Analyze the file named '$safeFileName'.")
+            appendLine("Explain its core functionality, architecture role, important methods, risks, and improvement ideas.")
+            appendLine("Keep the explanation clear for a junior developer.")
+            appendLine()
+            appendLine("Code:")
+            appendLine("```")
+            appendLine(rawCode.take(MAX_CODE_CHARS))
+            appendLine("```")
+        }
+
+        return generateText(prompt, "No explanation generated.")
+    }
+
+    suspend fun summarizePullRequest(diffCode: String): String {
+        val prompt = buildString {
+            appendLine("You are an expert lead developer reviewing a pull request.")
+            appendLine("Analyze the following Git diff.")
+            appendLine("Do not read line-by-line changes back to the user.")
+            appendLine("Explain the high-level purpose, likely bug fix or feature, architecture impact, risk, and testing notes.")
+            appendLine("Keep the explanation approachable for a junior developer.")
+            appendLine()
+            appendLine("Git diff:")
+            appendLine("```diff")
+            appendLine(diffCode.take(MAX_DIFF_CHARS))
+            appendLine("```")
+        }
+
+        return generateText(prompt, "No pull request explanation generated.")
+    }
+
+    suspend fun summarizePullRequest(owner: String, repo: String, pullNumber: Int, diffText: String): String {
+        val safeOwner = owner.ifBlank { "owner" }
+        val safeRepo = repo.ifBlank { "repo" }
+        val prompt = buildString {
+            appendLine("You are a senior code reviewer.")
+            appendLine("Summarize pull request #$pullNumber in $safeOwner/$safeRepo using the Git diff below.")
+            appendLine("Focus on developer impact, affected files, behavior changes, risks, testing notes, and release notes.")
+            appendLine("Use clear plain English. Avoid repeating every line of the diff.")
+            appendLine()
+            appendLine("Return this structure:")
+            appendLine("1. Summary")
+            appendLine("2. Key changes")
+            appendLine("3. Risk level")
+            appendLine("4. Testing checklist")
+            appendLine("5. Suggested release note")
+            appendLine()
+            appendLine("Git diff:")
+            appendLine("```diff")
+            appendLine(diffText.take(MAX_DIFF_CHARS))
+            appendLine("```")
+        }
+
+        return generateText(prompt, "No pull request summary generated.")
+    }
+
+    private suspend fun generateText(prompt: String, fallback: String): String {
+        return try {
+            val response = pollinationsApiService.generateText(
+                PollinationsRequest(
+                    messages = listOf(PollinationsMessage(role = "user", content = prompt))
+                )
+            )
+            response.takeIf { it.isNotBlank() } ?: fallback
+        } catch (error: Exception) {
+            "AI analysis failed: ${error.localizedMessage ?: "Unknown error"}"
+        }
+    }
+
+    companion object {
+        private const val MAX_CODE_CHARS = 12000
+        private const val MAX_DIFF_CHARS = 18000
+    }
+}
