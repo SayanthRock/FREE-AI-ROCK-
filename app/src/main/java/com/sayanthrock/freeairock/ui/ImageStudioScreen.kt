@@ -15,7 +15,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -74,12 +76,17 @@ fun ImageStudioScreen(
             label = { Text("Describe the image you want") },
             modifier = Modifier.fillMaxWidth(),
             singleLine = false,
-            maxLines = 5
+            maxLines = 5,
+            shape = MaterialTheme.shapes.extraLarge,
+            colors = OutlinedTextFieldDefaults.colors(
+                unfocusedBorderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
+                focusedBorderColor = MaterialTheme.colorScheme.primary
+            )
         )
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        Button(
+        OutlinedButton(
             onClick = {
                 if (prompt.isNotBlank()) {
                     val seed = (0..1000000).random()
@@ -90,7 +97,7 @@ fun ImageStudioScreen(
             modifier = Modifier.fillMaxWidth(),
             enabled = prompt.isNotBlank() && !isGenerating
         ) {
-            Text(if (isGenerating) "Generating..." else "Generate Image")
+            Text(if (isGenerating) "Generating..." else "Generate Image", fontFamily = FontFamily.Monospace)
         }
 
         Spacer(modifier = Modifier.height(32.dp))
@@ -98,7 +105,8 @@ fun ImageStudioScreen(
         imageUrl?.let { url ->
             Surface(
                 color = MaterialTheme.colorScheme.surface,
-                shape = MaterialTheme.shapes.medium,
+                shape = MaterialTheme.shapes.extraLarge,
+                shadowElevation = 8.dp,
                 modifier = Modifier.fillMaxWidth().height(300.dp)
             ) {
                 SubcomposeAsyncImage(
@@ -126,7 +134,7 @@ fun ImageStudioScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            Button(
+            OutlinedButton(
                 onClick = {
                     if (!isDownloading) {
                         isDownloading = true
@@ -153,7 +161,7 @@ fun ImageStudioScreen(
                 modifier = Modifier.fillMaxWidth(),
                 enabled = !isDownloading && !isGenerating
             ) {
-                Text(if (isDownloading) "Downloading..." else "Download [↓]")
+                Text(if (isDownloading) "Downloading..." else "Download [↓]", fontFamily = FontFamily.Monospace)
             }
         }
     }

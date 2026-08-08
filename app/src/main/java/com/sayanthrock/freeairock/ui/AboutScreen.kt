@@ -15,8 +15,8 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.RadioButton
-import androidx.compose.material3.RadioButtonDefaults
+import androidx.compose.material3.Surface
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -73,28 +73,31 @@ fun AboutScreen(
         Spacer(modifier = Modifier.height(16.dp))
 
         val themeOptions = listOf(ThemeMode.SYSTEM, ThemeMode.LIGHT, ThemeMode.DARK)
-        val themeLabels = listOf("System Auto Color", "Light Mode", "Dark Mode")
+        val themeLabels = listOf("System", "Light", "Dark")
 
-        themeOptions.forEachIndexed { index, themeMode ->
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { onThemeChange(themeMode) }
-                    .padding(vertical = 8.dp)
-            ) {
-                RadioButton(
-                    selected = currentTheme == themeMode,
-                    onClick = { onThemeChange(themeMode) },
-                    colors = RadioButtonDefaults.colors(
-                        selectedColor = MaterialTheme.colorScheme.primary
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            themeOptions.forEachIndexed { index, themeMode ->
+                Surface(
+                    shape = MaterialTheme.shapes.large,
+                    color = if (currentTheme == themeMode) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface,
+                    contentColor = if (currentTheme == themeMode) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(horizontal = 4.dp)
+                        .clickable { onThemeChange(themeMode) },
+                    shadowElevation = if (currentTheme == themeMode) 4.dp else 0.dp
+                ) {
+                    Text(
+                        text = themeLabels[index],
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontFamily = FontFamily.Monospace,
+                        modifier = Modifier.padding(vertical = 12.dp, horizontal = 8.dp),
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
                     )
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = themeLabels[index],
-                    style = MaterialTheme.typography.bodyLarge
-                )
+                }
             }
         }
 
@@ -121,8 +124,9 @@ fun AboutScreen(
 
         Text(
             text = "FREE-AI-ROCK",
-            style = MaterialTheme.typography.bodyLarge,
-            fontFamily = FontFamily.Monospace
+            style = MaterialTheme.typography.titleLarge,
+            fontFamily = FontFamily.Monospace,
+            color = MaterialTheme.colorScheme.primary
         )
         Text(
             text = "Designed and developed by @SayanthRock in Kerala, India.",
