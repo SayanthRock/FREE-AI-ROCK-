@@ -1,6 +1,8 @@
 package com.sayanthrock.freeairock.ui
 
+import android.graphics.drawable.BitmapDrawable
 import android.net.Uri
+import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -21,6 +23,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -30,7 +33,12 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.compose.SubcomposeAsyncImage
+import coil.imageLoader
+import coil.request.ImageRequest
+import coil.request.SuccessResult
 import com.sayanthrock.freeairock.data.image.BitmapImageState
+import com.sayanthrock.freeairock.data.image.BitmapStore
+import kotlinx.coroutines.launch
 
 @Composable
 fun ImageStudioScreen(
@@ -39,6 +47,9 @@ fun ImageStudioScreen(
     var prompt by remember { mutableStateOf("") }
     var imageUrl by remember { mutableStateOf<String?>(null) }
     var isGenerating by remember { mutableStateOf(false) }
+    var isDownloading by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
 
     Column(
         modifier = modifier
@@ -111,6 +122,38 @@ fun ImageStudioScreen(
                     contentScale = ContentScale.Fit,
                     modifier = Modifier.fillMaxSize()
                 )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Button(
+                onClick = {
+                    if (!isDownloading) {
+                        isDownloading = true
+                        scope.launch {
+                            val request = ImageRequest.Builder(context)
+                                .data(url)
+                                .build()
+                            val result = context.imageLoader.execute(request)
+                            if (result is SuccessResult) {
+                                val bitmap = (result.drawable as BitmapDrawable).bitmap
+                                val saveResult = BitmapStore.writePng(context, bitmap)
+                                saveResult.onSuccess { _ ->
+                                    Toast.makeText(context, "Saved image", Toast.LENGTH_SHORT).show()
+                                }.onFailure { error ->
+                                    Toast.makeText(context, "Error saving: ${error.message}", Toast.LENGTH_SHORT).show()
+                                }
+                            } else {
+                                Toast.makeText(context, "Error downloading image", Toast.LENGTH_SHORT).show()
+                            }
+                            isDownloading = false
+                        }
+                    }
+                },
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !isDownloading && !isGenerating
+            ) {
+                Text(if (isDownloading) "Downloading..." else "Download [↓]")
             }
         }
     }
