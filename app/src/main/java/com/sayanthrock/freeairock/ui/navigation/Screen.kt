@@ -5,6 +5,18 @@ sealed class Screen(
     val title: String,
     val shortLabel: String
 ) {
+    data object CodeAnalyzer : Screen(
+        route = "code_analyzer",
+        title = "Code AI",
+        shortLabel = "AI"
+    )
+
+    data object PullRequestReview : Screen(
+        route = "pr_review",
+        title = "PR Review",
+        shortLabel = "PR"
+    )
+
     data object ImageStudio : Screen(
         route = "image_studio",
         title = "Image Studio",
