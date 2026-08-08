@@ -8,12 +8,12 @@ sealed class Screen(
     data object ImageStudio : Screen(
         route = "image_studio",
         title = "Image Studio",
-        shortLabel = "IMG"
+        shortLabel = "◩"
     )
 
     data object About : Screen(
         route = "about",
         title = "Settings",
-        shortLabel = "SET"
+        shortLabel = "⚙"
     )
 }

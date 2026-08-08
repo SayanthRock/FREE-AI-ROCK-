@@ -3,8 +3,11 @@ package com.sayanthrock.freeairock.ui
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
+import androidx.compose.material3.TabRowDefaults
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -29,24 +32,38 @@ fun HomeScaffold(
     val screens = listOf(Screen.ImageStudio, Screen.About)
 
     Scaffold(
-        bottomBar = {
-            NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
+        topBar = {
+            Surface(shadowElevation = 4.dp) {
                 val navBackStackEntry by navController.currentBackStackEntryAsState()
                 val currentDestination = navBackStackEntry?.destination
+                val currentRoute = currentDestination?.route
+                val selectedTabIndex = screens.indexOfFirst { it.route == currentRoute }.takeIf { it >= 0 } ?: 0
 
-                screens.forEach { screen ->
-                    NavigationBarItem(
-                        icon = { Text(screen.shortLabel, fontFamily = FontFamily.Monospace) },
-                        label = { Text(screen.title, fontFamily = FontFamily.Monospace) },
-                        selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true,
-                        onClick = {
-                            navController.navigate(screen.route) {
-                                popUpTo(navController.graph.findStartDestination().id) { saveState = true }
-                                launchSingleTop = true
-                                restoreState = true
-                            }
-                        }
-                    )
+                TabRow(
+                    selectedTabIndex = selectedTabIndex,
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    contentColor = MaterialTheme.colorScheme.onSurface,
+                    indicator = { tabPositions ->
+                        TabRowDefaults.SecondaryIndicator(
+                            Modifier.tabIndicatorOffset(tabPositions[selectedTabIndex]),
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                ) {
+                    screens.forEachIndexed { index, screen ->
+                        Tab(
+                            selected = selectedTabIndex == index,
+                            onClick = {
+                                navController.navigate(screen.route) {
+                                    popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
+                            },
+                            text = { Text(screen.title, fontFamily = FontFamily.Monospace) },
+                            icon = { Text(screen.shortLabel, fontFamily = FontFamily.Monospace, style = MaterialTheme.typography.titleLarge) }
+                        )
+                    }
                 }
             }
         }
