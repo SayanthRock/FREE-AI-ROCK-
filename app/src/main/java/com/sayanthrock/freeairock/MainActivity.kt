@@ -27,8 +27,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModelProvider
 import com.sayanthrock.freeairock.data.ai.CodeAnalysisState
@@ -125,6 +129,7 @@ class MainActivity : ComponentActivity() {
                 HomeScaffold(
                     codeContent = { modifier ->
                         CodeAnalyzerScreen(
+                            initialToken = secureStorage.getGitHubToken() ?: "",
                             uiState = appViewModel.analysisState.collectAsState().value,
                             onSave = { githubToken ->
                                 appViewModel.saveKeys(githubToken)
@@ -159,13 +164,15 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 private fun CodeAnalyzerScreen(
+    initialToken: String,
     uiState: CodeAnalysisState,
     onSave: (githubToken: String) -> Unit,
     onAnalyze: (fileName: String, downloadUrl: String?) -> Unit,
     onReset: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var githubToken by remember { mutableStateOf("") }
+    var githubToken by remember { mutableStateOf(initialToken) }
+    var isTokenVisible by remember { mutableStateOf(false) }
 
     var fileName by remember { mutableStateOf("MainActivity.kt") }
     var fileUrl by remember { mutableStateOf("") }
@@ -200,8 +207,21 @@ private fun CodeAnalyzerScreen(
             OutlinedTextField(
                 value = githubToken,
                 onValueChange = { githubToken = it },
-                label = { Text("GitHub token") },
-                visualTransformation = PasswordVisualTransformation(),
+                label = { Text("GitHub token", fontFamily = FontFamily.Monospace) },
+                visualTransformation = if (isTokenVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                trailingIcon = {
+                    Text(
+                        text = if (isTokenVisible) "[Hide]" else "[Show]",
+                        fontFamily = FontFamily.Monospace,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier
+                            .clickable(
+                                role = Role.Button,
+                                onClickLabel = if (isTokenVisible) "Hide GitHub token" else "Show GitHub token"
+                            ) { isTokenVisible = !isTokenVisible }
+                            .padding(8.dp)
+                    )
+                },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true
             )
@@ -251,7 +271,22 @@ private fun CodeAnalyzerScreen(
             OutlinedTextField(
                 value = fileUrl,
                 onValueChange = { fileUrl = it },
-                label = { Text("GitHub raw/blob file URL") },
+                label = { Text("GitHub raw/blob file URL", fontFamily = FontFamily.Monospace) },
+                trailingIcon = {
+                    Text(
+                        text = "[Paste]",
+                        fontFamily = FontFamily.Monospace,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier
+                            .clickable(
+                                role = Role.Button,
+                                onClickLabel = "Paste GitHub raw or blob file URL from clipboard"
+                            ) {
+                                clipboardManager.getText()?.let { fileUrl = it.text }
+                            }
+                            .padding(8.dp)
+                    )
+                },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true
             )
