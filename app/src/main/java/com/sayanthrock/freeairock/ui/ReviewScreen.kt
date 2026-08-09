@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
@@ -28,6 +29,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.sayanthrock.freeairock.data.ai.CodeAnalysisState
@@ -69,7 +71,8 @@ fun ReviewScreen(
                 onValueChange = { ownerText = it },
                 label = { Text("Owner") },
                 modifier = Modifier.weight(1f),
-                singleLine = true
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
             )
 
             OutlinedTextField(
@@ -77,7 +80,8 @@ fun ReviewScreen(
                 onValueChange = { repoText = it },
                 label = { Text("Repo") },
                 modifier = Modifier.weight(1f),
-                singleLine = true
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
             )
         }
 
@@ -87,7 +91,17 @@ fun ReviewScreen(
             value = prNumberText,
             onValueChange = { prNumberText = it },
             label = { Text("Pull Request #") },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Number,
+                imeAction = ImeAction.Search
+            ),
+            keyboardActions = KeyboardActions(
+                onSearch = {
+                    if (uiState !is CodeAnalysisState.Loading && prNumberText.isNotBlank()) {
+                        viewModel.run(ownerText, repoText, prNumberText)
+                    }
+                }
+            ),
             modifier = Modifier.fillMaxWidth(),
             singleLine = true
         )

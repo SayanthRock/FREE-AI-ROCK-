@@ -26,8 +26,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModelProvider
@@ -203,7 +206,16 @@ private fun CodeAnalyzerScreen(
                 label = { Text("GitHub token") },
                 visualTransformation = PasswordVisualTransformation(),
                 modifier = Modifier.fillMaxWidth(),
-                singleLine = true
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                keyboardActions = KeyboardActions(
+                    onDone = {
+                        if (githubToken.isNotBlank()) {
+                            onSave(githubToken)
+                            savedMessage = "Saved securely on this device"
+                        }
+                    }
+                )
             )
 
 
@@ -243,17 +255,36 @@ private fun CodeAnalyzerScreen(
                 onValueChange = { fileName = it },
                 label = { Text("File name") },
                 modifier = Modifier.fillMaxWidth(),
-                singleLine = true
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
             )
 
             Spacer(modifier = Modifier.height(12.dp))
 
             OutlinedTextField(
                 value = fileUrl,
-                onValueChange = { fileUrl = it },
+                onValueChange = { url ->
+                    fileUrl = url
+                    if (url.isNotBlank()) {
+                        val cleanUrl = url.substringBefore("?").substringBefore("#")
+                        val parts = cleanUrl.split('/')
+                        val lastPart = parts.lastOrNull()
+                        if (!lastPart.isNullOrBlank() && lastPart.contains('.')) {
+                            fileName = lastPart
+                        }
+                    }
+                },
                 label = { Text("GitHub raw/blob file URL") },
                 modifier = Modifier.fillMaxWidth(),
-                singleLine = true
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                keyboardActions = KeyboardActions(
+                    onSearch = {
+                        if (uiState !is CodeAnalysisState.Loading && fileUrl.isNotBlank()) {
+                            onAnalyze(fileName, fileUrl)
+                        }
+                    }
+                )
             )
 
             Spacer(modifier = Modifier.height(16.dp))
