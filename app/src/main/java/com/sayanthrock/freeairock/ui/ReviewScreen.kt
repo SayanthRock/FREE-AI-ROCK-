@@ -26,7 +26,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import android.widget.Toast
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.ImeAction
@@ -44,6 +46,7 @@ fun ReviewScreen(
     var repoText by remember { mutableStateOf("Root-apk") }
     var prNumberText by remember { mutableStateOf("") }
     val clipboardManager = LocalClipboardManager.current
+    val context = LocalContext.current
 
     Column(
         modifier = modifier
@@ -136,7 +139,10 @@ fun ReviewScreen(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 OutlinedButton(
-                    onClick = { clipboardManager.setText(AnnotatedString(state.result)) },
+                    onClick = {
+                        clipboardManager.setText(AnnotatedString(state.result))
+                        Toast.makeText(context, "Review copied to clipboard", Toast.LENGTH_SHORT).show()
+                    },
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text("Copy Review")
