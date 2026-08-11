@@ -37,7 +37,7 @@ class ReviewViewModelTest {
 
     @Before
     fun setup() {
-        secureStorage = SecureStorageManager()
+        secureStorage = mockk(relaxed = true)
         githubApiService = mockk()
         pollinationsApiService = mockk()
         viewModel = ReviewViewModel(secureStorage, githubApiService, pollinationsApiService)

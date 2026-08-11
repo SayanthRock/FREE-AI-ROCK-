@@ -14,13 +14,12 @@ import io.mockk.mockk
 
 class AppViewModelFactoryTest {
 
-    private val secureStorage = SecureStorageManager()
+    private val secureStorage = mockk<SecureStorageManager>(relaxed = true)
     private val apiService = FakeGitHubApiService()
     private lateinit var factory: AppViewModelFactory
 
     @Before
     fun setup() {
-        secureStorage.clearSecrets()
         factory = AppViewModelFactory(secureStorage, apiService, mockk<PollinationsApiService>())
     }
 
