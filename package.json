@@ -5,6 +5,9 @@
   "scripts": {
     "test:browser": "playwright test"
   },
+  "dependencies": {
+    "@vercel/analytics": "^1.2.2"
+  },
   "devDependencies": {
     "@playwright/test": "^1.55.0"
   }
