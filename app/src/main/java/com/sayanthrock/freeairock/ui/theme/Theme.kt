@@ -7,13 +7,17 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
-private val CharcoalDark = Color(0xFF121212)
-private val CharcoalLight = Color(0xFF1A1A1A)
-private val PureWhite = Color(0xFFFFFFFF)
-private val OffWhite = Color(0xFFF5F5F5)
+val CharcoalDark = Color(0xFF121212)
+val CharcoalLight = Color(0xFF1E1E1E)
+val PureWhite = Color(0xFFFFFFFF)
+val OffWhite = Color(0xFFF5F5F5)
+
+// Glassmorphic translucent colors
+val GlassDarkSurface = Color(0x661E1E1E) // 40% opacity
+val GlassLightSurface = Color(0x66F5F5F5) // 40% opacity
 
 private val DarkColors = darkColorScheme(
-    primary = OffWhite,
+    primary = PureWhite,
     background = CharcoalDark,
     surface = CharcoalLight,
     onPrimary = CharcoalDark,
