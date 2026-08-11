@@ -4,6 +4,7 @@
     <uses-permission android:name="android.permission.INTERNET" />
 
     <application
+        android:name=".FreeAiRockApplication"
         android:allowBackup="true"
         android:label="FREE AI ROCK"
         android:supportsRtl="true"
