@@ -42,6 +42,7 @@ test.describe('FREE AI ROCK browser smoke', () => {
   test('stop button aborts an in-flight stream', async ({ page }) => {
     await seedSettings(page);
     await page.route('**/mock/v1/chat/completions', async route => {
+      await new Promise(resolve => setTimeout(resolve, 1000));
       await route.fulfill({ status: 200, contentType: 'text/event-stream', body: 'data: ' + JSON.stringify({ choices: [{ delta: { content: 'partial' } }] }) + '\n\n' });
     });
     await page.goto(appUrl);
