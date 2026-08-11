@@ -1,6 +1,8 @@
 package com.sayanthrock.freeairock.ui
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -22,6 +24,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 
@@ -76,19 +79,26 @@ fun AboutScreen(
         val themeLabels = listOf("System", "Light", "Dark")
 
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .selectableGroup(),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             themeOptions.forEachIndexed { index, themeMode ->
+                val isSelected = currentTheme == themeMode
                 Surface(
                     shape = MaterialTheme.shapes.large,
-                    color = if (currentTheme == themeMode) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface,
-                    contentColor = if (currentTheme == themeMode) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
+                    color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface,
+                    contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier
                         .weight(1f)
                         .padding(horizontal = 4.dp)
-                        .clickable { onThemeChange(themeMode) },
-                    shadowElevation = if (currentTheme == themeMode) 4.dp else 0.dp
+                        .selectable(
+                            selected = isSelected,
+                            role = Role.RadioButton,
+                            onClick = { onThemeChange(themeMode) }
+                        ),
+                    shadowElevation = if (isSelected) 4.dp else 0.dp
                 ) {
                     Text(
                         text = themeLabels[index],

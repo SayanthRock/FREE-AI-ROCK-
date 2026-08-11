@@ -1,6 +1,7 @@
 package com.sayanthrock.freeairock
 
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -29,6 +30,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -174,6 +176,7 @@ private fun CodeAnalyzerScreen(
     var fileUrl by remember { mutableStateOf("") }
     var savedMessage by remember { mutableStateOf<String?>(null) }
     val clipboardManager = LocalClipboardManager.current
+    val context = LocalContext.current
 
     Surface(
         modifier = modifier.fillMaxSize(),
@@ -326,7 +329,10 @@ private fun CodeAnalyzerScreen(
                     Spacer(modifier = Modifier.height(12.dp))
 
                     OutlinedButton(
-                        onClick = { clipboardManager.setText(AnnotatedString(uiState.result)) },
+                        onClick = {
+                            clipboardManager.setText(AnnotatedString(uiState.result))
+                            Toast.makeText(context, "Result copied to clipboard", Toast.LENGTH_SHORT).show()
+                        },
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Text("Copy Result")
