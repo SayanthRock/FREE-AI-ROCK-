@@ -2,6 +2,7 @@ package com.sayanthrock.freeairock.ui
 
 import android.content.Context
 import android.net.Uri
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -134,7 +135,7 @@ fun CodeResultScreen(
                         OutlinedButton(
                             onClick = {
                                 clipboardManager.setText(AnnotatedString(currentAiResult))
-                                saveMessage = "Copied"
+                                Toast.makeText(context, "Code analysis copied to clipboard", Toast.LENGTH_SHORT).show()
                             },
                             modifier = Modifier.weight(1f)
                         ) {
