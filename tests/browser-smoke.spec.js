@@ -57,14 +57,32 @@ test.describe('FREE AI ROCK browser smoke', () => {
   test('switches dark, light, and system themes', async ({ page }) => {
     await seedSettings(page);
     await page.goto(appUrl);
+
+    const isMobile = await page.locator('#open').isVisible();
+    const sidebar = page.locator('#sidebar');
+
+    const ensureSidebarOpen = async () => {
+      if (isMobile) {
+        const isOpen = await sidebar.evaluate(el => el.classList.contains('open'));
+        if (!isOpen) {
+          await page.locator('#open').click();
+        }
+      }
+    };
+
+    await ensureSidebarOpen();
     await page.locator('#settings').click();
     await page.locator('#theme').selectOption('light');
     await page.locator('#saveSettings').click();
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+
+    await ensureSidebarOpen();
     await page.locator('#settings').click();
     await page.locator('#theme').selectOption('dark');
     await page.locator('#saveSettings').click();
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+
+    await ensureSidebarOpen();
     await page.locator('#settings').click();
     await page.locator('#theme').selectOption('system');
     await page.locator('#saveSettings').click();

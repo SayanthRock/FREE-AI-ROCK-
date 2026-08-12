@@ -9,11 +9,14 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -60,7 +63,19 @@ fun ChatScreen(viewModel: AppViewModel, modifier: Modifier = Modifier) {
                     value = inputText,
                     onValueChange = { inputText = it },
                     modifier = Modifier.weight(1f),
-                    placeholder = { Text("Message AI...") }
+                    placeholder = { Text("Message AI...") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(
+                        imeAction = ImeAction.Send
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onSend = {
+                            if (inputText.isNotBlank()) {
+                                viewModel.sendMessage(inputText)
+                                inputText = ""
+                            }
+                        }
+                    )
                 )
                 Button(
                     onClick = {
@@ -69,6 +84,7 @@ fun ChatScreen(viewModel: AppViewModel, modifier: Modifier = Modifier) {
                             inputText = ""
                         }
                     },
+                    enabled = inputText.isNotBlank(),
                     modifier = Modifier.padding(start = 8.dp)
                 ) {
                     Text("Send")
